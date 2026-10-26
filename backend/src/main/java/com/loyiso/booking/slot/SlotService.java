@@ -6,9 +6,11 @@ import com.loyiso.booking.branch.BranchService;
 import com.loyiso.booking.common.InvalidRequestException;
 import java.time.Clock;
 import java.time.DayOfWeek;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -71,6 +73,30 @@ public class SlotService {
         DayOfWeek day = date.getDayOfWeek();
         if (day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY) {
             throw new InvalidRequestException("Branches are closed on weekends.");
+        }
+    }
+
+    /**
+     * Checks that the requested start time is a real slot for this branch: on the slot grid,
+     * inside opening hours, and not already in the past.
+     */
+    public void validateSlot(Branch branch, LocalDate date, LocalTime start) {
+        validateBookableDate(date);
+
+        LocalTime end = start.plusMinutes(branch.getSlotMinutes());
+        boolean wholeMinute = start.equals(start.truncatedTo(ChronoUnit.MINUTES));
+        boolean withinHours = !start.isBefore(branch.getOpensAt())
+                && end.isAfter(start)
+                && !end.isAfter(branch.getClosesAt());
+        boolean onGrid = withinHours
+                && wholeMinute
+                && Duration.between(branch.getOpensAt(), start).toMinutes() % branch.getSlotMinutes() == 0;
+
+        if (!onGrid) {
+            throw new InvalidRequestException("The requested time is not a valid slot for this branch.");
+        }
+        if (!LocalDateTime.of(date, start).isAfter(LocalDateTime.now(clock))) {
+            throw new InvalidRequestException("The requested slot has already started.");
         }
     }
 }
