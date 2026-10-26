@@ -1,0 +1,14 @@
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Build
+target/
+node_modules/
+dist/
+.angular/
+
+# Env
+.env
+*.log
