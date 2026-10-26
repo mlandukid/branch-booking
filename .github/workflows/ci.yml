@@ -33,4 +33,12 @@ jobs:
           java-version: "21"
           cache: maven
       - run: chmod +x mvnw
-      - run: ./mvnw -B verify
+      # Environment variables override the H2 settings in application-test.yml,
+      # so the whole suite, including the concurrency test, runs on real Postgres.
+      - name: Build and test against PostgreSQL
+        run: ./mvnw -B verify
+        env:
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/booking
+          SPRING_DATASOURCE_USERNAME: booking
+          SPRING_DATASOURCE_PASSWORD: booking
+          SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
