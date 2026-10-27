@@ -1,0 +1,12 @@
+# Development profile: in-memory database, so no Docker or Postgres is needed.
+# Data resets on every restart and the demo branches are re-seeded by Flyway.
+spring:
+  datasource:
+    url: jdbc:h2:mem:booking;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1
+    username: sa
+    password: ""
+    driver-class-name: org.h2.Driver
+
+booking:
+  mail:
+    enabled: false
