@@ -1,0 +1,160 @@
+<main class="page">
+  <header class="hero">
+    <h1>Book a branch appointment</h1>
+    <p>Choose a branch, pick a time that suits you, and we will email your confirmation.</p>
+  </header>
+
+  @if (confirmation(); as booking) {
+    <section class="card confirmation" role="status" aria-live="polite">
+      <div class="tick" aria-hidden="true">&#10003;</div>
+      <h2>Your appointment is confirmed</h2>
+      <p class="muted">A confirmation email is on its way to <strong>{{ booking.customerEmail }}</strong>.</p>
+
+      <dl class="summary">
+        <div>
+          <dt>Reference</dt>
+          <dd class="reference">{{ booking.reference }}</dd>
+        </div>
+        <div>
+          <dt>Branch</dt>
+          <dd>
+            {{ booking.branchName }}
+            @if (selectedBranch(); as branch) {
+              <span class="muted block">{{ branch.address }}, {{ branch.city }}</span>
+            }
+          </dd>
+        </div>
+        <div>
+          <dt>Date</dt>
+          <dd>{{ prettyDate(booking.date) }}</dd>
+        </div>
+        <div>
+          <dt>Time</dt>
+          <dd>{{ time(booking.startTime) }} to {{ time(booking.endTime) }}</dd>
+        </div>
+      </dl>
+
+      <button type="button" class="primary" (click)="newBooking()">Book another appointment</button>
+    </section>
+  } @else {
+    <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <section class="card" aria-labelledby="where-heading">
+        <h2 id="where-heading"><span class="step">1</span> Branch and date</h2>
+
+        @if (branchesError()) {
+          <div class="alert" role="alert">
+            {{ branchesError() }}
+            <button type="button" class="link" (click)="loadBranches()">Try again</button>
+          </div>
+        }
+
+        <div class="fields">
+          <div class="field">
+            <label for="branch">Branch</label>
+            <select id="branch" formControlName="branchId" (change)="onBranchChange($event)">
+              <option value="" disabled>
+                @if (loadingBranches()) {
+                  Loading branches...
+                } @else {
+                  Select a branch
+                }
+              </option>
+              @for (branch of branches(); track branch.id) {
+                <option [value]="branch.id">{{ branch.name }} ({{ branch.city }})</option>
+              }
+            </select>
+            @if (selectedBranch(); as branch) {
+              <p class="hint">
+                {{ branch.address }}. Open {{ time(branch.opensAt) }} to {{ time(branch.closesAt) }},
+                {{ branch.slotMinutes }} minute appointments.
+              </p>
+            }
+          </div>
+
+          <div class="field">
+            <label for="date">Date</label>
+            <input
+              id="date"
+              type="date"
+              formControlName="date"
+              [min]="minDate"
+              [max]="maxDate"
+              (change)="onDateChange($event)"
+            />
+            <p class="hint">Weekdays only, up to 30 days ahead.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="time-heading">
+        <h2 id="time-heading"><span class="step">2</span> Pick a time</h2>
+
+        @if (!branchId() || !date()) {
+          <p class="muted">Select a branch and a date to see the available times.</p>
+        } @else if (loadingSlots()) {
+          <p class="muted">Loading available times...</p>
+        } @else if (slotsMessage()) {
+          <p class="notice">{{ slotsMessage() }}</p>
+        } @else {
+          <div class="slot-grid" role="group" aria-label="Available times">
+            @for (slot of slots(); track slot.startTime) {
+              <button
+                type="button"
+                class="slot"
+                [class.selected]="selectedSlot()?.startTime === slot.startTime"
+                [disabled]="!slot.available"
+                [attr.aria-pressed]="selectedSlot()?.startTime === slot.startTime"
+                (click)="selectSlot(slot)"
+              >
+                {{ time(slot.startTime) }}
+              </button>
+            }
+          </div>
+          <p class="hint">{{ availableCount() }} of {{ slots().length }} times available. Greyed out times are taken.</p>
+        }
+      </section>
+
+      @if (selectedSlot(); as slot) {
+        <section class="card" aria-labelledby="details-heading">
+          <h2 id="details-heading"><span class="step">3</span> Your details</h2>
+
+          <p class="chosen">
+            {{ selectedBranch()?.name }}, {{ prettyDate(form.controls.date.value) }} at {{ time(slot.startTime) }}
+          </p>
+
+          <div class="fields">
+            <div class="field">
+              <label for="name">Full name</label>
+              <input id="name" type="text" formControlName="customerName" autocomplete="name" maxlength="120" />
+              @if (form.controls.customerName.touched && form.controls.customerName.invalid) {
+                <p class="error">Please enter your name.</p>
+              }
+            </div>
+
+            <div class="field">
+              <label for="email">Email address</label>
+              <input id="email" type="email" formControlName="customerEmail" autocomplete="email" maxlength="254" />
+              @if (form.controls.customerEmail.touched && form.controls.customerEmail.invalid) {
+                <p class="error">Please enter a valid email address.</p>
+              }
+            </div>
+          </div>
+
+          @if (errorMessage()) {
+            <div class="alert" role="alert">{{ errorMessage() }}</div>
+          }
+
+          <button type="submit" class="primary" [disabled]="submitting()">
+            @if (submitting()) {
+              Booking...
+            } @else {
+              Confirm appointment
+            }
+          </button>
+        </section>
+      } @else if (errorMessage()) {
+        <div class="alert" role="alert">{{ errorMessage() }}</div>
+      }
+    </form>
+  }
+</main>
