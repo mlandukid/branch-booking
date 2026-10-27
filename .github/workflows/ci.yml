@@ -77,6 +77,7 @@ jobs:
           curl -fsS "$base/" | grep "<app-root" > /dev/null
           curl -fsS "$base/api/v1/branches" | grep "Sandton" > /dev/null
           curl -fsS "$base/v3/api-docs" | grep "/api/v1/bookings" > /dev/null
+          curl -fsSL "$base/swagger-ui.html" | grep -i "swagger" > /dev/null
 
           # next weekday that is at least 3 days away
           date=$(date -d "+3 days" +%F)
