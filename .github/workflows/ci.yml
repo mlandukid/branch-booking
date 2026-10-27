@@ -42,3 +42,70 @@ jobs:
           SPRING_DATASOURCE_USERNAME: booking
           SPRING_DATASOURCE_PASSWORD: booking
           SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
+
+  frontend:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - run: npm test -- --watch=false
+
+  stack:
+    name: full stack smoke test
+    runs-on: ubuntu-24.04
+    needs: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Build images and start the whole stack
+        run: docker compose up -d --build --wait --wait-timeout 240
+
+      - name: Smoke test through the public entry point
+        run: |
+          set -eu
+          base=http://localhost:8081
+
+          curl -fsS "$base/" | grep "<app-root" > /dev/null
+          curl -fsS "$base/api/v1/branches" | grep "Sandton" > /dev/null
+          curl -fsS "$base/v3/api-docs" | grep "/api/v1/bookings" > /dev/null
+
+          # next weekday that is at least 3 days away
+          date=$(date -d "+3 days" +%F)
+          while [ "$(date -d "$date" +%u)" -ge 6 ]; do date=$(date -d "$date +1 day" +%F); done
+
+          body="{\"branchId\":1,\"date\":\"$date\",\"startTime\":\"09:00\",\"customerName\":\"CI Smoke\",\"customerEmail\":\"ci-smoke@example.com\"}"
+
+          first=$(curl -s -o /dev/null -w "%{http_code}" -H "Content-Type: application/json" -d "$body" "$base/api/v1/bookings")
+          second=$(curl -s -o /dev/null -w "%{http_code}" -H "Content-Type: application/json" -d "$body" "$base/api/v1/bookings")
+          echo "first booking: $first, second booking: $second"
+          [ "$first" = "201" ]
+          [ "$second" = "409" ]
+
+          # the confirmation email is sent asynchronously, so give it a moment to arrive
+          found=no
+          for i in $(seq 1 20); do
+            if curl -fsS http://localhost:8025/api/v2/messages | grep "ci-smoke@example.com" > /dev/null; then
+              found=yes
+              break
+            fi
+            sleep 1
+          done
+          echo "confirmation email delivered to MailHog: $found"
+          [ "$found" = "yes" ]
+
+      - name: Show container logs on failure
+        if: failure()
+        run: docker compose logs --no-color
+
+      - name: Stop the stack
+        if: always()
+        run: docker compose down -v
