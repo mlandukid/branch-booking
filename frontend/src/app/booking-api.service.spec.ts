@@ -1,0 +1,46 @@
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { TestBed } from '@angular/core/testing';
+
+import { BookingApi } from './booking-api.service';
+
+describe('BookingApi', () => {
+  let api: BookingApi;
+  let http: HttpTestingController;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+    api = TestBed.inject(BookingApi);
+    http = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => http.verify());
+
+  it('requests the slots for a branch and date', () => {
+    let count = 0;
+    api.slots(1, '2026-11-02').subscribe((slots) => (count = slots.length));
+
+    const req = http.expectOne((r) => r.url === '/api/v1/branches/1/slots');
+    expect(req.request.method).toBe('GET');
+    expect(req.request.params.get('date')).toBe('2026-11-02');
+    req.flush([{ startTime: '09:00:00', endTime: '09:30:00', available: true }]);
+
+    expect(count).toBe(1);
+  });
+
+  it('posts a booking request', () => {
+    const body = {
+      branchId: 1,
+      date: '2026-11-02',
+      startTime: '09:00:00',
+      customerName: 'Thandi Nkosi',
+      customerEmail: 'thandi@example.com',
+    };
+    api.book(body).subscribe();
+
+    const req = http.expectOne('/api/v1/bookings');
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual(body);
+    req.flush({});
+  });
+});
