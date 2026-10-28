@@ -7,6 +7,12 @@ A full-stack application for scheduling branch appointments. Customers choose a 
 - **Email:** confirmation sent after the booking commits; MailHog catches it locally
 - **Delivery:** multi-stage Docker images, one-command `docker compose`, GitHub Actions CI
 
+## Screenshots
+
+![Booking page](docs/booking-page.png)
+
+![Confirmation email in MailHog](docs/confirmation-email.png)
+
 ## Run it with Docker (recommended)
 
 Prerequisite: Docker with Compose.
