@@ -31,6 +31,20 @@ Book an appointment, then open MailHog to see the confirmation email. Stop every
 
 Each image has its own Dockerfile: `backend/Dockerfile` and `frontend/Dockerfile`. Both are multi-stage builds and run as a non-root user.
 
+### Ports
+
+The stack publishes only two ports on your machine: the application on `8081` and the MailHog inbox on `8025`. Postgres and the API container are reachable only inside the Docker network, so the stack does not clash with a Postgres you already run locally. If either port is taken, choose others:
+
+    APP_PORT=9090 MAILHOG_PORT=9025 docker compose up --build
+
+On Windows PowerShell set the variables first, for example `$env:APP_PORT = "9090"`.
+
+To run the backend outside Docker against containerised Postgres and MailHog, publish their ports with the dev override:
+
+    docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d postgres mailhog
+
+To open a SQL shell: `docker compose exec postgres psql -U booking -d booking`.
+
 ## Run it without Docker
 
 Prerequisites: Java 21, Node 22 or newer. No database is needed, because the `local` profile uses an in-memory database that is seeded with three demo branches on every start.

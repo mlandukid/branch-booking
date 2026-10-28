@@ -5,6 +5,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -18,8 +19,8 @@ import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 /**
- * Maps exceptions to RFC 7807 problem responses. Framework exceptions (malformed input,
- * missing parameters) are handled by the parent class.
+ * Maps exceptions to RFC 7807 problem responses. Every problem carries the request id, so a
+ * customer who quotes it can be matched to the log lines for that request.
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
@@ -28,32 +29,23 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(ResourceNotFoundException.class)
     ProblemDetail handleNotFound(ResourceNotFoundException ex) {
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
-        problem.setTitle("Resource not found");
-        return problem;
+        return problem(HttpStatus.NOT_FOUND, "Resource not found", ex.getMessage());
     }
 
     @ExceptionHandler(InvalidRequestException.class)
     ProblemDetail handleInvalidRequest(InvalidRequestException ex) {
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
-        problem.setTitle("Invalid request");
-        return problem;
+        return problem(HttpStatus.BAD_REQUEST, "Invalid request", ex.getMessage());
     }
 
     @ExceptionHandler(SlotUnavailableException.class)
     ProblemDetail handleSlotUnavailable(SlotUnavailableException ex) {
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
-        problem.setTitle("Slot unavailable");
-        return problem;
+        return problem(HttpStatus.CONFLICT, "Slot unavailable", ex.getMessage());
     }
 
     @ExceptionHandler(Exception.class)
     ProblemDetail handleUnexpected(Exception ex) {
         log.error("Unexpected error", ex);
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
-                HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred.");
-        problem.setTitle("Internal server error");
-        return problem;
+        return problem(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error", "An unexpected error occurred.");
     }
 
     @Override
@@ -69,5 +61,33 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         problem.setTitle("Invalid request");
         problem.setProperty("errors", errors);
         return handleExceptionInternal(ex, problem, headers, HttpStatus.BAD_REQUEST, request);
+    }
+
+    /** Every framework-generated problem passes through here, so they all get the request id too. */
+    @Override
+    protected ResponseEntity<Object> handleExceptionInternal(Exception ex,
+                                                             Object body,
+                                                             HttpHeaders headers,
+                                                             HttpStatusCode statusCode,
+                                                             WebRequest request) {
+        ResponseEntity<Object> response = super.handleExceptionInternal(ex, body, headers, statusCode, request);
+        if (response != null && response.getBody() instanceof ProblemDetail problem) {
+            addRequestId(problem);
+        }
+        return response;
+    }
+
+    private static ProblemDetail problem(HttpStatus status, String title, String detail) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(status, detail);
+        problem.setTitle(title);
+        return addRequestId(problem);
+    }
+
+    private static ProblemDetail addRequestId(ProblemDetail problem) {
+        String id = MDC.get(RequestIdFilter.MDC_KEY);
+        if (id != null) {
+            problem.setProperty("requestId", id);
+        }
+        return problem;
     }
 }

@@ -29,6 +29,10 @@ spring:
 server:
   shutdown: graceful
 
+logging:
+  pattern:
+    level: "%5p [%X{requestId:-}]"
+
 booking:
   timezone: ${BOOKING_TIMEZONE:Africa/Johannesburg}
   mail:
