@@ -1,0 +1,9 @@
+# Publishes the database and SMTP ports on the host, for running the backend outside Docker.
+# Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d postgres mailhog
+services:
+  postgres:
+    ports:
+      - "5432:5432"
+  mailhog:
+    ports:
+      - "1025:1025"

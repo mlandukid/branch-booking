@@ -1,5 +1,8 @@
 name: branch-booking
 
+# Only the application and the mail inbox are published on the host. Postgres and the
+# backend are reachable inside the Docker network only, so this stack never clashes with
+# a database you already run locally. See docker-compose.dev.yml to publish more.
 services:
   postgres:
     image: postgres:16-alpine
@@ -7,21 +10,20 @@ services:
       POSTGRES_DB: booking
       POSTGRES_USER: booking
       POSTGRES_PASSWORD: ${DB_PASSWORD:-booking}
-    ports:
-      - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U booking -d booking"]
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U booking -d booking"]
       interval: 5s
       timeout: 3s
       retries: 10
+    restart: unless-stopped
 
   mailhog:
     image: mailhog/mailhog:v1.0.1
     ports:
-      - "1025:1025"
-      - "8025:8025"
+      - "${MAILHOG_PORT:-8025}:8025"
+    restart: unless-stopped
 
   backend:
     build: ./backend
@@ -43,7 +45,7 @@ services:
   frontend:
     build: ./frontend
     ports:
-      - "8081:8080"
+      - "${APP_PORT:-8081}:8080"
     depends_on:
       backend:
         condition: service_healthy
