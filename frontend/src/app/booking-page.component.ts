@@ -4,11 +4,13 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 
 import { BookingApi } from './booking-api.service';
 import { Booking, Branch, Slot } from './booking.models';
+import { buildIcs } from './calendar';
+import { CursorRingComponent } from './cursor-ring.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, CursorRingComponent],
   templateUrl: './booking-page.component.html',
   styleUrl: './booking-page.component.css',
 })
@@ -18,6 +20,20 @@ export class BookingPageComponent implements OnInit {
 
   /** Incremented on every slot request so a slow, older response can never overwrite a newer one. */
   private slotRequest = 0;
+
+  protected readonly steps = [
+    { n: 1, label: 'Branch and date' },
+    { n: 2, label: 'Time' },
+    { n: 3, label: 'Your details' },
+  ];
+  protected readonly skeleton = Array.from({ length: 12 }, (_, i) => i);
+  protected readonly confetti = Array.from({ length: 18 }, (_, i) => ({
+    left: 8 + ((i * 53) % 85),
+    delay: (i % 6) * 0.07,
+    drift: ((i * 37) % 60) - 30,
+    spin: 180 + ((i * 71) % 360),
+    color: ['#0a5fd8', '#00b3a4', '#f5a623', '#e5484d'][i % 4],
+  }));
 
   protected readonly branches = signal<Branch[]>([]);
   protected readonly branchesError = signal<string | null>(null);
@@ -34,6 +50,7 @@ export class BookingPageComponent implements OnInit {
   protected readonly submitting = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly confirmation = signal<Booking | null>(null);
+  protected readonly copied = signal(false);
 
   protected readonly minDate = toIsoDate(new Date());
   protected readonly maxDate = toIsoDate(addDays(new Date(), 30));
@@ -42,6 +59,50 @@ export class BookingPageComponent implements OnInit {
     () => this.branches().find((branch) => branch.id === this.branchId()) ?? null,
   );
   protected readonly availableCount = computed(() => this.slots().filter((slot) => slot.available).length);
+  protected readonly availablePercent = computed(() => {
+    const total = this.slots().length;
+    return total === 0 ? 0 : Math.round((this.availableCount() / total) * 100);
+  });
+  protected readonly chosenDate = computed(() => {
+    const date = this.date();
+    return date ? this.prettyDate(date) : '';
+  });
+
+  protected readonly serviceStatus = computed<'loading' | 'online' | 'offline'>(() => {
+    if (this.loadingBranches()) {
+      return 'loading';
+    }
+    return this.branchesError() ? 'offline' : 'online';
+  });
+
+  protected readonly currentStep = computed(() => {
+    if (!this.branchId() || !this.date()) {
+      return 1;
+    }
+    return this.selectedSlot() ? 3 : 2;
+  });
+
+  /** Branches grouped by city, with cities and branches sorted alphabetically. */
+  protected readonly branchGroups = computed(() => {
+    const byCity = new Map<string, Branch[]>();
+    for (const branch of this.branches()) {
+      byCity.set(branch.city, [...(byCity.get(branch.city) ?? []), branch]);
+    }
+    return [...byCity.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([city, branches]) => ({
+        city,
+        branches: [...branches].sort((a, b) => a.name.localeCompare(b.name)),
+      }));
+  });
+
+  protected readonly slotGroups = computed(() => {
+    const slots = this.slots();
+    return [
+      { label: 'Morning', slots: slots.filter((slot) => slot.startTime < '12:00') },
+      { label: 'Afternoon', slots: slots.filter((slot) => slot.startTime >= '12:00') },
+    ].filter((group) => group.slots.length > 0);
+  });
 
   protected readonly form = this.fb.nonNullable.group({
     branchId: ['', [Validators.required]],
@@ -134,6 +195,30 @@ export class BookingPageComponent implements OnInit {
     this.form.controls.customerName.reset();
     this.form.controls.customerEmail.reset();
     this.loadSlots();
+  }
+
+  protected async copyReference(reference: string): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(reference);
+      this.copied.set(true);
+      window.setTimeout(() => this.copied.set(false), 2000);
+    } catch {
+      // Clipboard access can be unavailable (for example on plain http). Nothing to do.
+    }
+  }
+
+  protected downloadCalendar(booking: Booking): void {
+    const branch = this.selectedBranch();
+    const location = branch ? `${branch.name}, ${branch.address}, ${branch.city}` : booking.branchName;
+    const blob = new Blob([buildIcs(booking, location)], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `appointment-${booking.date}.ics`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
   protected time(value: string): string {
