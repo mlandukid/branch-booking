@@ -1,3 +1,15 @@
+:root {
+  --ink: #0b1b36;
+  --muted: #5d6c86;
+  --line: #dde5f1;
+  --bg: #f3f6fb;
+  --brand: #0a5fd8;
+  --brand-dark: #084ca9;
+  --accent: #00b3a4;
+  --ok: #1b7a3a;
+  --danger: #b3261e;
+}
+
 *,
 *::before,
 *::after {
@@ -6,12 +18,13 @@
 
 html {
   -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
 }
 
 body {
   margin: 0;
-  background: #f3f6fb;
-  color: #14233b;
+  background: var(--bg);
+  color: var(--ink);
   font-family: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
   line-height: 1.5;
 }
@@ -20,4 +33,19 @@ button,
 input,
 select {
   font: inherit;
+}
+
+::selection {
+  background: rgba(10, 95, 216, 0.2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
