@@ -5,12 +5,11 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { BookingApi } from './booking-api.service';
 import { Booking, Branch, Slot } from './booking.models';
 import { buildIcs } from './calendar';
-import { CursorRingComponent } from './cursor-ring.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [ReactiveFormsModule, CursorRingComponent],
+  imports: [ReactiveFormsModule],
   templateUrl: './booking-page.component.html',
   styleUrl: './booking-page.component.css',
 })
@@ -22,18 +21,11 @@ export class BookingPageComponent implements OnInit {
   private slotRequest = 0;
 
   protected readonly steps = [
-    { n: 1, label: 'Branch and date' },
-    { n: 2, label: 'Time' },
+    { n: 1, label: 'Where and when' },
+    { n: 2, label: 'Pick a time' },
     { n: 3, label: 'Your details' },
   ];
   protected readonly skeleton = Array.from({ length: 12 }, (_, i) => i);
-  protected readonly confetti = Array.from({ length: 18 }, (_, i) => ({
-    left: 8 + ((i * 53) % 85),
-    delay: (i % 6) * 0.07,
-    drift: ((i * 37) % 60) - 30,
-    spin: 180 + ((i * 71) % 360),
-    color: ['#0a5fd8', '#00b3a4', '#f5a623', '#e5484d'][i % 4],
-  }));
 
   protected readonly branches = signal<Branch[]>([]);
   protected readonly branchesError = signal<string | null>(null);

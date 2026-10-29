@@ -1,73 +1,33 @@
-<app-cursor-ring />
-
-<div class="backdrop" aria-hidden="true">
-  <span class="blob b1"></span>
-  <span class="blob b2"></span>
-  <span class="blob b3"></span>
-</div>
-
-<header class="topbar">
-  <div class="brand">
+<header class="masthead">
+  <a class="wordmark" href="/">
     <svg class="logo" viewBox="0 0 40 40" aria-hidden="true" focusable="false">
-      <defs>
-        <linearGradient id="logo-gradient" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stop-color="#0a5fd8" />
-          <stop offset="1" stop-color="#00b3a4" />
-        </linearGradient>
-      </defs>
-      <rect width="40" height="40" rx="10" fill="url(#logo-gradient)" />
-      <rect x="9" y="12" width="22" height="19" rx="3" fill="none" stroke="#fff" stroke-width="2" />
-      <path d="M9 18h22" stroke="#fff" stroke-width="2" />
-      <path d="M15 9v6M25 9v6" stroke="#fff" stroke-width="2" stroke-linecap="round" />
-      <path d="M15.5 25l3 3 6-6.5" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+      <rect width="40" height="40" rx="9" fill="#0e5a47" />
+      <path d="M9 14h22a2 2 0 0 1 2 2v2.2a2.8 2.8 0 0 0 0 5.6V26a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v-2.2a2.8 2.8 0 0 0 0-5.6V16a2 2 0 0 1 2-2z" fill="#f6f1e7" />
+      <path d="M24 15.5v9" stroke="#0e5a47" stroke-width="1.6" stroke-dasharray="2 2" />
+      <circle cx="15.5" cy="20" r="2.2" fill="#e8a317" />
     </svg>
-    <span class="brand-name">Branch Booking</span>
-  </div>
-
-  <div class="topbar-right">
-    <span class="status" role="status" [class.online]="serviceStatus() === 'online'" [class.offline]="serviceStatus() === 'offline'">
-      <span class="status-dot"></span>
-      @switch (serviceStatus()) {
-        @case ('online') {
-          Service online
-        }
-        @case ('offline') {
-          Service unavailable
-        }
-        @default {
-          Connecting...
-        }
-      }
-    </span>
-    <a class="docs-link" href="/swagger-ui.html" target="_blank" rel="noopener">API docs</a>
-  </div>
+    <span>Branch Booking</span>
+  </a>
 </header>
 
 <main class="page">
   @if (confirmation(); as booking) {
-    <section class="card confirmation" role="status" aria-live="polite">
-      <div class="confetti-layer" aria-hidden="true">
-        @for (piece of confetti; track $index) {
-          <span
-            class="confetti"
-            [style.left.%]="piece.left"
-            [style.animation-delay.s]="piece.delay"
-            [style.background]="piece.color"
-            [style.--drift]="piece.drift + 'px'"
-            [style.--spin]="piece.spin + 'deg'"
-          ></span>
-        }
+    <article class="slip" role="status" aria-live="polite">
+      <div class="slip-top">
+        <p class="slip-label">Appointment slip</p>
+        <span class="stamp">Confirmed</span>
       </div>
 
-      <svg class="tick" viewBox="0 0 52 52" aria-hidden="true" focusable="false">
-        <circle class="tick-circle" cx="26" cy="26" r="24" />
-        <path class="tick-check" d="M15 27l8 8 14-16" />
-      </svg>
+      <p class="slip-time">{{ time(booking.startTime) }}</p>
+      <p class="slip-date">{{ prettyDate(booking.date) }}</p>
+      <p class="slip-where">{{ booking.branchName }}</p>
+      @if (selectedBranch(); as branch) {
+        <p class="muted">{{ branch.address }}, {{ branch.city }}</p>
+      }
 
-      <h2>Your appointment is confirmed</h2>
-      <p class="muted">A confirmation email is on its way to <strong>{{ booking.customerEmail }}</strong>.</p>
+      <div class="perforation" aria-hidden="true"></div>
 
-      <dl class="summary">
+      <dl class="meta">
         <div>
           <dt>Reference</dt>
           <dd class="reference">
@@ -78,64 +38,56 @@
           </dd>
         </div>
         <div>
-          <dt>Branch</dt>
-          <dd>
-            {{ booking.branchName }}
-            @if (selectedBranch(); as branch) {
-              <span class="muted block">{{ branch.address }}, {{ branch.city }}</span>
-            }
-          </dd>
+          <dt>Name</dt>
+          <dd>{{ booking.customerName }}</dd>
         </div>
         <div>
-          <dt>Date</dt>
-          <dd>{{ prettyDate(booking.date) }}</dd>
-        </div>
-        <div>
-          <dt>Time</dt>
-          <dd>{{ time(booking.startTime) }} to {{ time(booking.endTime) }}</dd>
+          <dt>Until</dt>
+          <dd>{{ time(booking.endTime) }}</dd>
         </div>
       </dl>
+
+      <p class="muted note">
+        A confirmation email is on its way to <strong>{{ booking.customerEmail }}</strong>. Please arrive a few
+        minutes early and quote your reference at reception.
+      </p>
 
       <div class="actions">
         <button type="button" class="primary" (click)="downloadCalendar(booking)">Add to calendar</button>
         <button type="button" class="secondary" (click)="newBooking()">Book another appointment</button>
       </div>
-    </section>
+    </article>
   } @else {
-    <section class="hero">
-      <p class="eyebrow">Appointments</p>
-      <h1>Book your branch visit <span class="grad">in a few clicks</span></h1>
-      <p class="lead">Pick a branch, choose a time and get your confirmation by email. Every time slot is held for one customer only.</p>
-      <ul class="chips">
-        <li>Instant confirmation</li>
-        <li>No double bookings</li>
-        <li>Email receipt</li>
-        <li>Add to calendar</li>
-      </ul>
+    <section class="intro">
+      <h1>Skip the queue.<br />Book your branch visit.</h1>
+      <p class="lead">
+        Choose a branch, pick a time that suits you and we will email your confirmation. Each time is held for one
+        customer only.
+      </p>
     </section>
 
-    <ol class="stepper" aria-label="Progress">
+    <ol class="progress" aria-label="Progress">
       @for (step of steps; track step.n) {
         <li
           [class.active]="currentStep() === step.n"
           [class.done]="currentStep() > step.n"
           [attr.aria-current]="currentStep() === step.n ? 'step' : null"
         >
-          <span class="num">
+          <span class="n">
             @if (currentStep() > step.n) {
               &#10003;
             } @else {
               {{ step.n }}
             }
           </span>
-          <span class="label">{{ step.label }}</span>
+          <span class="t">{{ step.label }}</span>
         </li>
       }
     </ol>
 
     <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
       <section class="card" aria-labelledby="where-heading">
-        <h2 id="where-heading"><span class="step">1</span> Branch and date</h2>
+        <h2 id="where-heading"><span class="no">1</span>Where and when</h2>
 
         @if (branchesError()) {
           <div class="alert" role="alert">
@@ -187,10 +139,10 @@
       </section>
 
       <section class="card" aria-labelledby="time-heading">
-        <h2 id="time-heading"><span class="step">2</span> Pick a time</h2>
+        <h2 id="time-heading"><span class="no">2</span>Pick a time</h2>
 
         @if (!branchId() || !date()) {
-          <p class="muted">Select a branch and a date to see the available times.</p>
+          <p class="muted">Choose a branch and a day, and the free times will appear here.</p>
         } @else if (loadingSlots()) {
           <div class="slot-grid" aria-busy="true" aria-label="Loading available times">
             @for (n of skeleton; track n) {
@@ -201,13 +153,13 @@
           <p class="notice">{{ slotsMessage() }}</p>
         } @else {
           <div class="meter" [class.low]="availableCount() <= 3">
-            <div class="meter-bar"><span [style.width.%]="availablePercent()"></span></div>
             <p>
-              {{ availableCount() }} of {{ slots().length }} times available
+              {{ availableCount() }} of {{ slots().length }} times left
               @if (availableCount() <= 3) {
                 <strong>, filling up fast</strong>
               }
             </p>
+            <div class="meter-bar"><span [style.width.%]="availablePercent()"></span></div>
           </div>
 
           @for (group of slotGroups(); track group.label) {
@@ -227,13 +179,13 @@
               }
             </div>
           }
-          <p class="hint">Greyed out times are already taken.</p>
+          <p class="hint">Struck out times are already taken.</p>
         }
       </section>
 
       @if (selectedSlot(); as slot) {
         <section class="card" aria-labelledby="details-heading">
-          <h2 id="details-heading"><span class="step">3</span> Your details</h2>
+          <h2 id="details-heading"><span class="no">3</span>Your details</h2>
 
           <p class="chosen">{{ selectedBranch()?.name }}, {{ chosenDate() }} at {{ time(slot.startTime) }}</p>
 
@@ -261,9 +213,9 @@
 
           <button type="submit" class="primary" [disabled]="submitting()">
             @if (submitting()) {
-              <span class="spinner"></span>Booking...
+              Booking...
             } @else {
-              Confirm appointment
+              Confirm my appointment
             }
           </button>
         </section>
@@ -273,3 +225,24 @@
     </form>
   }
 </main>
+
+<footer class="footer">
+  <span class="status" role="status" [class.online]="serviceStatus() === 'online'" [class.offline]="serviceStatus() === 'offline'">
+    <span class="dot"></span>
+    @switch (serviceStatus()) {
+      @case ('online') {
+        Booking service online
+      }
+      @case ('offline') {
+        Booking service unavailable
+      }
+      @default {
+        Connecting...
+      }
+    }
+  </span>
+  <nav aria-label="Developer links">
+    <a href="/swagger-ui.html" target="_blank" rel="noopener">API docs</a>
+    <a href="https://github.com/mlandukid/branch-booking" target="_blank" rel="noopener">Source code</a>
+  </nav>
+</footer>
