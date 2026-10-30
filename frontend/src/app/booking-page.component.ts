@@ -4,12 +4,14 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 
 import { BookingApi } from './booking-api.service';
 import { Booking, Branch, Slot } from './booking.models';
+import { BRANCH_PHOTOS } from './branch-photos';
 import { buildIcs } from './calendar';
+import { GrowTextComponent } from './grow-text.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, GrowTextComponent],
   templateUrl: './booking-page.component.html',
   styleUrl: './booking-page.component.css',
 })
@@ -59,6 +61,16 @@ export class BookingPageComponent implements OnInit {
     const date = this.date();
     return date ? this.prettyDate(date) : '';
   });
+
+  /** Branches that have a photo, in display order. The photo panel shows one tile per entry. */
+  protected readonly tiles = computed(() =>
+    this.branches()
+      .flatMap((branch) => {
+        const photo = BRANCH_PHOTOS[branch.name.trim().toLowerCase()];
+        return photo ? [{ branch, photo }] : [];
+      })
+      .sort((a, b) => a.photo.order - b.photo.order),
+  );
 
   protected readonly serviceStatus = computed<'loading' | 'online' | 'offline'>(() => {
     if (this.loadingBranches()) {
@@ -125,6 +137,16 @@ export class BookingPageComponent implements OnInit {
   protected onBranchChange(event: Event): void {
     const value = (event.target as HTMLSelectElement).value;
     this.branchId.set(value ? Number(value) : null);
+    this.resetSelection();
+    this.loadSlots();
+  }
+
+  protected pickBranch(id: number): void {
+    if (this.confirmation()) {
+      return;
+    }
+    this.form.controls.branchId.setValue(String(id));
+    this.branchId.set(id);
     this.resetSelection();
     this.loadSlots();
   }
