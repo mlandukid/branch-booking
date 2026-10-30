@@ -14,6 +14,7 @@ import com.loyiso.booking.common.ResourceNotFoundException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
@@ -47,13 +48,27 @@ class BookingControllerTest {
 
     @Test
     void createsBookingAndReturnsLocationHeader() throws Exception {
-        when(bookingService.create(any(CreateBookingRequest.class))).thenReturn(sampleResponse());
+        when(bookingService.place(any(CreateBookingRequest.class), any()))
+                .thenReturn(new CreateResult(sampleResponse(), false));
 
         mockMvc.perform(post("/api/v1/bookings").contentType(MediaType.APPLICATION_JSON).content(VALID_BODY))
                 .andExpect(status().isCreated())
                 .andExpect(header().string("Location", "http://localhost/api/v1/bookings/abc-123"))
+                .andExpect(header().doesNotExist("Idempotent-Replayed"))
                 .andExpect(jsonPath("$.reference").value("abc-123"))
                 .andExpect(jsonPath("$.branchName").value("Sandton"));
+    }
+
+    @Test
+    void aReplayedBookingIsFlagged() throws Exception {
+        when(bookingService.place(any(CreateBookingRequest.class), any()))
+                .thenReturn(new CreateResult(sampleResponse(), true));
+
+        mockMvc.perform(post("/api/v1/bookings").contentType(MediaType.APPLICATION_JSON)
+                        .header("Idempotency-Key", "retry-key-12345").content(VALID_BODY))
+                .andExpect(status().isCreated())
+                .andExpect(header().string("Idempotent-Replayed", "true"))
+                .andExpect(jsonPath("$.reference").value("abc-123"));
     }
 
     @Test
@@ -69,14 +84,50 @@ class BookingControllerTest {
     }
 
     @Test
+    void malformedIdempotencyKeyReturns400() throws Exception {
+        mockMvc.perform(post("/api/v1/bookings").contentType(MediaType.APPLICATION_JSON)
+                        .header("Idempotency-Key", "x").content(VALID_BODY))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value(
+                        "The Idempotency-Key header must be 8 to 64 letters, digits, hyphens or underscores."));
+    }
+
+    @Test
     void takenSlotReturns409() throws Exception {
-        when(bookingService.create(any(CreateBookingRequest.class)))
+        when(bookingService.place(any(CreateBookingRequest.class), any()))
                 .thenThrow(new SlotUnavailableException("That slot is no longer available."));
 
         mockMvc.perform(post("/api/v1/bookings").contentType(MediaType.APPLICATION_JSON).content(VALID_BODY))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.status").value(409))
                 .andExpect(jsonPath("$.detail").value("That slot is no longer available."));
+    }
+
+    @Test
+    void theLoserOfASameKeyRaceGetsTheWinnersBooking() throws Exception {
+        when(bookingService.place(any(CreateBookingRequest.class), any()))
+                .thenThrow(new SlotUnavailableException("That slot is no longer available."));
+        when(bookingService.findByIdempotencyKey("twin-key-12345")).thenReturn(Optional.of(sampleResponse()));
+
+        mockMvc.perform(post("/api/v1/bookings").contentType(MediaType.APPLICATION_JSON)
+                        .header("Idempotency-Key", "twin-key-12345").content(VALID_BODY))
+                .andExpect(status().isCreated())
+                .andExpect(header().string("Idempotent-Replayed", "true"))
+                .andExpect(jsonPath("$.reference").value("abc-123"));
+    }
+
+    @Test
+    void aKeyBelongingToADifferentSlotDoesNotHideTheConflict() throws Exception {
+        BookingResponse other = new BookingResponse("zzz-999", 1L, "Sandton", LocalDate.of(2026, 11, 2),
+                LocalTime.of(10, 0), LocalTime.of(10, 30), "Someone", "someone@example.com",
+                Instant.parse("2026-10-26T08:00:00Z"));
+        when(bookingService.place(any(CreateBookingRequest.class), any()))
+                .thenThrow(new SlotUnavailableException("That slot is no longer available."));
+        when(bookingService.findByIdempotencyKey("twin-key-12345")).thenReturn(Optional.of(other));
+
+        mockMvc.perform(post("/api/v1/bookings").contentType(MediaType.APPLICATION_JSON)
+                        .header("Idempotency-Key", "twin-key-12345").content(VALID_BODY))
+                .andExpect(status().isConflict());
     }
 
     @Test
