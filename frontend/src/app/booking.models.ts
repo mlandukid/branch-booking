@@ -33,3 +33,8 @@ export interface Booking {
   customerEmail: string;
   createdAt: string;
 }
+export interface Holiday {
+  date: string;
+  code: string;
+  name: string;
+}
