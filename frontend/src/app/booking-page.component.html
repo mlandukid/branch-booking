@@ -10,7 +10,32 @@
   </a>
 </header>
 
-<main class="page">
+<div class="shell" [class.no-panel]="tiles().length === 0">
+  @if (tiles().length > 0) {
+    <aside class="panel" [class.idle]="branchId() === null" aria-label="Our branches">
+      @for (tile of tiles(); track tile.branch.id) {
+        <button
+          type="button"
+          class="tile"
+          [class.active]="branchId() === tile.branch.id"
+          [class.dim]="branchId() !== null && branchId() !== tile.branch.id"
+          [attr.aria-pressed]="branchId() === tile.branch.id"
+          [attr.aria-label]="'Choose the ' + tile.branch.name + ' branch'"
+          (click)="pickBranch(tile.branch.id)"
+        >
+          <img [src]="tile.photo.src" [alt]="tile.photo.alt" [style.object-position]="tile.photo.focus" decoding="async" />
+          <span class="tile-text">
+            <span class="tile-name">{{ tile.branch.name }}</span>
+            <span class="tile-caption">{{ tile.photo.caption }}</span>
+            @if (tile.photo.credit) {
+              <span class="tile-credit">Photo: {{ tile.photo.credit }}</span>
+            }
+          </span>
+        </button>
+      }
+    </aside>
+  }
+  <main class="page">
   @if (confirmation(); as booking) {
     <article class="slip" role="status" aria-live="polite">
       <div class="slip-top">
@@ -18,6 +43,7 @@
         <span class="stamp">Confirmed</span>
       </div>
 
+      <p class="slip-cheer"><app-grow-text text="You are booked!!!" /></p>
       <p class="slip-time">{{ time(booking.startTime) }}</p>
       <p class="slip-date">{{ prettyDate(booking.date) }}</p>
       <p class="slip-where">{{ booking.branchName }}</p>
@@ -59,7 +85,7 @@
     </article>
   } @else {
     <section class="intro">
-      <h1>Skip the queue.<br />Book your branch visit.</h1>
+      <h1><app-grow-text text="Skip the queue!!!" /><span class="sub">Book your branch visit.</span></h1>
       <p class="lead">
         Choose a branch, pick a time that suits you and we will email your confirmation. Each time is held for one
         customer only.
@@ -225,6 +251,7 @@
     </form>
   }
 </main>
+</div>
 
 <footer class="footer">
   <span class="status" role="status" [class.online]="serviceStatus() === 'online'" [class.offline]="serviceStatus() === 'offline'">

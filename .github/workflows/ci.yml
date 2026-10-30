@@ -79,6 +79,12 @@ jobs:
           curl -fsS "$base/v3/api-docs" | grep "/api/v1/bookings" > /dev/null
           curl -fsSL "$base/swagger-ui.html" | grep -i "swagger" > /dev/null
 
+          # security headers are present, and the page has no inline handler that the CSP would block
+          headers=$(curl -fsSI "$base/")
+          echo "$headers" | grep -i "content-security-policy" > /dev/null
+          echo "$headers" | grep -i "x-content-type-options: nosniff" > /dev/null
+          if curl -fsS "$base/" | grep -i "onload=" > /dev/null; then echo "inline onload handler found"; exit 1; fi
+
           # next weekday that is at least 3 days away
           date=$(date -d "+3 days" +%F)
           while [ "$(date -d "$date" +%u)" -ge 6 ]; do date=$(date -d "$date +1 day" +%F); done
