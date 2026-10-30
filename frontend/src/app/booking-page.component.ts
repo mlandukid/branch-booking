@@ -5,13 +5,15 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { BookingApi } from './booking-api.service';
 import { Booking, Branch, Slot } from './booking.models';
 import { BRANCH_PHOTOS, BranchPhoto } from './branch-photos';
+import { Holiday } from './booking.models';
 import { buildIcs } from './calendar';
+import { DatePickerComponent } from './date-picker.component';
 import { GrowTextComponent } from './grow-text.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [ReactiveFormsModule, GrowTextComponent],
+  imports: [ReactiveFormsModule, GrowTextComponent, DatePickerComponent],
   templateUrl: './booking-page.component.html',
   styleUrl: './booking-page.component.css',
 })
@@ -36,6 +38,7 @@ export class BookingPageComponent implements OnInit {
   protected readonly branchesError = signal<string | null>(null);
   protected readonly loadingBranches = signal(true);
 
+  protected readonly holidays = signal<Record<string, Holiday>>({});
   protected readonly branchId = signal<number | null>(null);
   protected readonly date = signal<string | null>(null);
 
@@ -120,6 +123,23 @@ export class BookingPageComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadBranches();
+    this.loadHolidays();
+  }
+
+  /** Loads this year and next, which covers every month the calendar lets the customer browse. */
+  private loadHolidays(): void {
+    const year = new Date().getFullYear();
+    for (const y of [year, year + 1]) {
+      this.api.holidays(y).subscribe({
+        next: (list) =>
+          this.holidays.update((current) => ({
+            ...current,
+            ...Object.fromEntries(list.map((holiday) => [holiday.date, holiday])),
+          })),
+        // The calendar still works without the icons. The server refuses closed days anyway.
+        error: () => undefined,
+      });
+    }
   }
 
   protected loadBranches(): void {
@@ -154,9 +174,9 @@ export class BookingPageComponent implements OnInit {
     this.loadSlots();
   }
 
-  protected onDateChange(event: Event): void {
-    const value = (event.target as HTMLInputElement).value;
-    this.date.set(value || null);
+  protected onDatePicked(iso: string): void {
+    this.form.controls.date.setValue(iso);
+    this.date.set(iso);
     this.resetSelection();
     this.loadSlots();
   }

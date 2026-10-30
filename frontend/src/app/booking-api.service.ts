@@ -2,7 +2,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, retry, throwError, timer } from 'rxjs';
 
-import { Booking, Branch, CreateBookingRequest, Slot } from './booking.models';
+import { Booking, Branch, CreateBookingRequest, Holiday, Slot } from './booking.models';
 
 /** A booking request plus an optional key that makes repeating the request safe. */
 export interface BookingAttempt extends CreateBookingRequest {
@@ -21,6 +21,10 @@ export class BookingApi {
 
   slots(branchId: number, date: string): Observable<Slot[]> {
     return this.http.get<Slot[]>(`${this.base}/branches/${branchId}/slots`, { params: { date } });
+  }
+
+  holidays(year: number): Observable<Holiday[]> {
+    return this.http.get<Holiday[]>(`${this.base}/holidays`, { params: { year } });
   }
 
   book(attempt: BookingAttempt): Observable<Booking> {
