@@ -10,8 +10,8 @@
   </a>
 </header>
 
-<div class="shell" [class.no-panel]="tiles().length === 0">
-  @if (tiles().length > 0) {
+<div class="shell" [class.no-panel]="tiles().length === 0 || confirmation() !== null">
+  @if (tiles().length > 0 && !confirmation()) {
     <aside class="panel" [class.idle]="branchId() === null" aria-label="Our branches">
       @for (tile of tiles(); track tile.branch.id) {
         <button
@@ -38,6 +38,15 @@
   <main class="page">
   @if (confirmation(); as booking) {
     <article class="slip" role="status" aria-live="polite">
+      @if (photoFor(booking.branchName); as photo) {
+        <figure class="slip-photo">
+          <img [src]="photo.src" [alt]="photo.alt" [style.object-position]="photo.focus" decoding="async" />
+          <figcaption>
+            {{ booking.branchName }}
+            <span>{{ photo.caption }}</span>
+          </figcaption>
+        </figure>
+      }
       <div class="slip-top">
         <p class="slip-label">Appointment slip</p>
         <span class="stamp">Confirmed</span>
@@ -85,7 +94,7 @@
     </article>
   } @else {
     <section class="intro">
-      <h1><app-grow-text text="Skip the queue!!!" /><span class="sub">Book your branch visit.</span></h1>
+      <h1><app-grow-text text="Skip the queueeeeeeeeeeeeeeee!!!" label="Skip the queue!!!" /><span class="sub">Book your branch visit and walk straight in.</span></h1>
       <p class="lead">
         Choose a branch, pick a time that suits you and we will email your confirmation. Each time is held for one
         customer only.

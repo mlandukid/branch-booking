@@ -4,7 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 
 import { BookingApi } from './booking-api.service';
 import { Booking, Branch, Slot } from './booking.models';
-import { BRANCH_PHOTOS } from './branch-photos';
+import { BRANCH_PHOTOS, BranchPhoto } from './branch-photos';
 import { buildIcs } from './calendar';
 import { GrowTextComponent } from './grow-text.component';
 
@@ -237,6 +237,10 @@ export class BookingPageComponent implements OnInit {
 
   protected time(value: string): string {
     return value.slice(0, 5);
+  }
+
+  protected photoFor(branchName: string): BranchPhoto | null {
+    return BRANCH_PHOTOS[branchName.trim().toLowerCase()] ?? null;
   }
 
   protected prettyDate(iso: string): string {
