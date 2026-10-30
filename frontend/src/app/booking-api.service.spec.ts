@@ -28,6 +28,24 @@ describe('BookingApi', () => {
     expect(count).toBe(1);
   });
 
+  it('sends the idempotency key as a header and keeps it out of the body', () => {
+    api
+      .book({
+        branchId: 1,
+        date: '2026-11-02',
+        startTime: '09:00:00',
+        customerName: 'Thandi Nkosi',
+        customerEmail: 'thandi@example.com',
+        idempotencyKey: 'attempt-12345678',
+      })
+      .subscribe();
+
+    const req = http.expectOne('/api/v1/bookings');
+    expect(req.request.headers.get('Idempotency-Key')).toBe('attempt-12345678');
+    expect(req.request.body.idempotencyKey).toBeUndefined();
+    req.flush({});
+  });
+
   it('posts a booking request', () => {
     const body = {
       branchId: 1,
