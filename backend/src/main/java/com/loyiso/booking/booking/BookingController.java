@@ -42,7 +42,7 @@ public class BookingController {
     }
 
     @GetMapping("/{reference}")
-    @Operation(summary = "Look up a booking by its reference")
+    @Operation(summary = "Look up a booking by its reference", description = "The customer email address is masked in this response.")
     @ApiResponse(responseCode = "200", description = "Booking found")
     @ApiResponse(responseCode = "404", description = "Booking not found")
     public BookingResponse get(@PathVariable String reference) {

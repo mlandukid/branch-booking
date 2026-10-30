@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -25,6 +26,7 @@ public record CreateBookingRequest(
         @Schema(example = "Thandi Nkosi")
         @NotBlank(message = "must not be blank")
         @Size(max = 120, message = "must be at most 120 characters")
+        @Pattern(regexp = "^[^\\p{Cntrl}]*$", message = "must not contain control characters")
         String customerName,
 
         @Schema(example = "thandi@example.com")

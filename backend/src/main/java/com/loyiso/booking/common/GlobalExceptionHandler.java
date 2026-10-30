@@ -1,5 +1,6 @@
 package com.loyiso.booking.common;
 
+import com.loyiso.booking.booking.BookingLimitExceededException;
 import com.loyiso.booking.booking.SlotUnavailableException;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -40,6 +41,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(SlotUnavailableException.class)
     ProblemDetail handleSlotUnavailable(SlotUnavailableException ex) {
         return problem(HttpStatus.CONFLICT, "Slot unavailable", ex.getMessage());
+    }
+
+    @ExceptionHandler(BookingLimitExceededException.class)
+    ProblemDetail handleBookingLimit(BookingLimitExceededException ex) {
+        return problem(HttpStatus.valueOf(422), "Booking limit reached", ex.getMessage());
     }
 
     @ExceptionHandler(Exception.class)
