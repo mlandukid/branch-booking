@@ -100,6 +100,17 @@ jobs:
           [ "$first" = "201" ]
           [ "$second" = "409" ]
 
+          # a retry with the same Idempotency-Key returns the original booking instead of failing
+          key=$(cat /proc/sys/kernel/random/uuid)
+          idem="{\"branchId\":1,\"date\":\"$date\",\"startTime\":\"10:00\",\"customerName\":\"CI Retry\",\"customerEmail\":\"ci-retry@example.com\"}"
+          r1=$(curl -s -H "Content-Type: application/json" -H "Idempotency-Key: $key" -d "$idem" "$base/api/v1/bookings")
+          r2=$(curl -s -H "Content-Type: application/json" -H "Idempotency-Key: $key" -d "$idem" "$base/api/v1/bookings")
+          ref1=$(echo "$r1" | grep -o '"reference":"[^"]*"')
+          ref2=$(echo "$r2" | grep -o '"reference":"[^"]*"')
+          echo "first: $ref1, retry: $ref2"
+          [ -n "$ref1" ]
+          [ "$ref1" = "$ref2" ]
+
           # the confirmation email is sent asynchronously, so give it a moment to arrive
           found=no
           for i in $(seq 1 20); do

@@ -116,6 +116,8 @@ Example:
 
 **One customer cannot hoard slots.** An email address may hold at most three upcoming appointments, otherwise the API answers `422`. Unlike the slot rule, this is a soft limit checked in the service, not a database constraint, so two simultaneous requests from the same email could slip past it. That trade-off is acceptable for anti-hoarding. A double booking is not, which is why only the slot rule is enforced by the database.
 
+**Retries are safe.** The browser sends a random `Idempotency-Key` with each booking attempt. The server stores the key in the same transaction as the booking, so a repeat of the same request returns the original booking (flagged with `Idempotent-Replayed: true`) and sends no second email. The same key with a different request is rejected with `422`. If identical requests arrive at the same moment, the one that loses the slot race hands back the winner's booking, and a test proves it with eight simultaneous requests. After one dropped connection the browser retries once by itself, which is only safe because of the key.
+
 **Schema is owned by Flyway.** Hibernate only validates the entities against the migrations (`ddl-auto: validate`).
 
 ## Configuration
@@ -157,7 +159,7 @@ What a production deployment would still need: authentication for customers and 
 
 ## Known limitations and next steps
 
-- **A network timeout can make a successful booking look failed.** The retry then gets a `409`. The proper fix is an `Idempotency-Key` header with stored keys, so a retry returns the original booking.
+- **Idempotency keys are stored forever.** Each key adds a small row. A scheduled job should delete keys older than a day or two.
 
 - **No authentication.** Anyone can book and look up a booking by reference. A production version would add customer identity and rate limiting.
 - **Email is not guaranteed.** If the process stops between commit and send, or the mail server is down, that email is lost. The fix is a transactional outbox: store the pending email in the same transaction as the booking and have a worker send it and retry.

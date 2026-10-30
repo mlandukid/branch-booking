@@ -45,7 +45,7 @@ class BookingLimitTest {
         BranchService branchService = new BranchService(branchRepository);
         SlotService slotService = new SlotService(branchService, bookingRepository, CLOCK);
         bookingService = new BookingService(bookingRepository, branchService, slotService,
-                mock(ApplicationEventPublisher.class), CLOCK);
+                mock(ApplicationEventPublisher.class), CLOCK, mock(IdempotencyKeyRepository.class));
     }
 
     private CreateBookingRequest request(String email) {

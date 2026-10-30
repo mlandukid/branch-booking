@@ -8,6 +8,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Locale;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
@@ -28,17 +29,25 @@ public class BookingService {
     private final SlotService slotService;
     private final ApplicationEventPublisher eventPublisher;
     private final Clock clock;
+    private final IdempotencyKeyRepository idempotencyKeyRepository;
 
     public BookingService(BookingRepository bookingRepository,
                           BranchService branchService,
                           SlotService slotService,
                           ApplicationEventPublisher eventPublisher,
-                          Clock clock) {
+                          Clock clock,
+                          IdempotencyKeyRepository idempotencyKeyRepository) {
         this.bookingRepository = bookingRepository;
         this.branchService = branchService;
         this.slotService = slotService;
         this.eventPublisher = eventPublisher;
         this.clock = clock;
+        this.idempotencyKeyRepository = idempotencyKeyRepository;
+    }
+
+    @Transactional
+    public BookingResponse create(CreateBookingRequest request) {
+        return place(request, null).booking();
     }
 
     /**
@@ -46,12 +55,28 @@ public class BookingService {
      * against double-booking. The exists check below only produces a friendlier error in the
      * common case, because two requests can both pass it at the same moment.
      *
+     * With an idempotency key, repeating the same request returns the original booking and
+     * publishes nothing, so a retry never books twice or sends a second email. The key is stored
+     * in the same transaction as the booking, so either both exist or neither does.
+     *
      * The per-customer limit is a softer rule: two simultaneous requests from the same email
      * could both pass the count. That is acceptable for an anti-hoarding rule, whereas a double
      * booking is not, which is why only the slot rule is enforced by the database.
      */
     @Transactional
-    public BookingResponse create(CreateBookingRequest request) {
+    public CreateResult place(CreateBookingRequest request, String idempotencyKey) {
+        if (idempotencyKey != null) {
+            Optional<IdempotencyKey> existing = idempotencyKeyRepository.findWithBooking(idempotencyKey);
+            if (existing.isPresent()) {
+                Booking original = existing.get().getBooking();
+                if (!isSameRequest(original, request)) {
+                    throw new IdempotencyKeyReuseException(
+                            "This Idempotency-Key was already used for a different request.");
+                }
+                return new CreateResult(BookingResponse.from(original), true);
+            }
+        }
+
         Branch branch = branchService.getById(request.branchId());
         slotService.validateSlot(branch, request.date(), request.startTime());
 
@@ -87,8 +112,24 @@ public class BookingService {
             throw new SlotUnavailableException("That slot is no longer available.", ex);
         }
 
+        if (idempotencyKey != null) {
+            try {
+                idempotencyKeyRepository.saveAndFlush(new IdempotencyKey(idempotencyKey, booking, Instant.now(clock)));
+            } catch (DataIntegrityViolationException ex) {
+                // Another request claimed this key for a different slot at the same moment. Roll back.
+                throw new IdempotencyKeyReuseException(
+                        "This Idempotency-Key was already used for a different request.");
+            }
+        }
+
         eventPublisher.publishEvent(BookingCreatedEvent.from(booking));
-        return BookingResponse.from(booking);
+        return new CreateResult(BookingResponse.from(booking), false);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<BookingResponse> findByIdempotencyKey(String idempotencyKey) {
+        return idempotencyKeyRepository.findWithBooking(idempotencyKey)
+                .map(key -> BookingResponse.from(key.getBooking()));
     }
 
     @Transactional(readOnly = true)
@@ -96,6 +137,12 @@ public class BookingService {
         return bookingRepository.findByReferenceWithBranch(reference)
                 .map(BookingResponse::forLookup)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking %s not found".formatted(reference)));
+    }
+
+    private static boolean isSameRequest(Booking original, CreateBookingRequest request) {
+        return original.getBranch().getId().equals(request.branchId())
+                && original.getAppointmentDate().equals(request.date())
+                && original.getStartTime().equals(request.startTime());
     }
 
     private SlotUnavailableException slotTaken() {

@@ -53,7 +53,7 @@ class BookingServiceTest {
 
         BranchService branchService = new BranchService(branchRepository);
         SlotService slotService = new SlotService(branchService, bookingRepository, CLOCK);
-        bookingService = new BookingService(bookingRepository, branchService, slotService, publisher, CLOCK);
+        bookingService = new BookingService(bookingRepository, branchService, slotService, publisher, CLOCK, mock(IdempotencyKeyRepository.class));
     }
 
     private CreateBookingRequest request(LocalDate date, LocalTime time) {

@@ -22,6 +22,9 @@ export class BookingPageComponent implements OnInit {
   /** Incremented on every slot request so a slow, older response can never overwrite a newer one. */
   private slotRequest = 0;
 
+  /** Identifies one booking attempt, so a retry after a dropped connection cannot book twice. */
+  private attemptKey: string | null = null;
+
   protected readonly steps = [
     { n: 1, label: 'Where and when' },
     { n: 2, label: 'Pick a time' },
@@ -163,6 +166,7 @@ export class BookingPageComponent implements OnInit {
       return;
     }
     this.selectedSlot.set(slot);
+    this.attemptKey = null;
     this.errorMessage.set(null);
   }
 
@@ -174,6 +178,7 @@ export class BookingPageComponent implements OnInit {
     }
 
     const value = this.form.getRawValue();
+    const key = (this.attemptKey ??= newIdempotencyKey());
     this.submitting.set(true);
     this.errorMessage.set(null);
 
@@ -184,15 +189,20 @@ export class BookingPageComponent implements OnInit {
         startTime: slot.startTime,
         customerName: value.customerName.trim(),
         customerEmail: value.customerEmail.trim(),
+        idempotencyKey: key,
       })
       .subscribe({
         next: (booking) => {
           this.submitting.set(false);
           this.confirmation.set(booking);
+          this.attemptKey = null;
         },
         error: (err: HttpErrorResponse) => {
           this.submitting.set(false);
           this.errorMessage.set(describeError(err));
+          if (err.status !== 0 && err.status < 500) {
+            this.attemptKey = null;
+          }
           if (err.status === 409) {
             // Someone else got there first. Refresh so the taken slot shows as unavailable.
             this.selectedSlot.set(null);
@@ -338,4 +348,14 @@ function toIsoDate(date: Date): string {
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   return `${date.getFullYear()}-${month}-${day}`;
+}
+
+/** A random key for one booking attempt. Falls back for pages served over plain http, where randomUUID is missing. */
+function newIdempotencyKey(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
 }
