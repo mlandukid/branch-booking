@@ -31,10 +31,10 @@ export function layoutLetters(text: string, min = 0.62, max = 1.3): GrowLetter[]
   selector: 'app-grow-text',
   standalone: true,
   template: `
-    <span class="sr-only">{{ text() }}</span>
+    <span class="sr-only">{{ label() ?? text() }}</span>
     <span aria-hidden="true">
       @for (word of words(); track $index) {
-        <span class="word">
+        <span class="word" [class.long]="word.length > 12">
           @for (letter of word; track $index) {
             <span
               class="letter"
@@ -71,6 +71,10 @@ export function layoutLetters(text: string, min = 0.62, max = 1.3): GrowLetter[]
       transform-origin: 50% 100%;
       animation: pop 0.5s cubic-bezier(0.2, 1.4, 0.4, 1) both;
     }
+    .word.long {
+      display: inline;
+      white-space: normal;
+    }
     .bang {
       color: var(--saffron, #e8a317);
     }
@@ -88,5 +92,7 @@ export function layoutLetters(text: string, min = 0.62, max = 1.3): GrowLetter[]
 })
 export class GrowTextComponent {
   readonly text = input.required<string>();
+  /** What screen readers announce, when the displayed text is stretched or decorated. */
+  readonly label = input<string>();
   protected readonly words = computed(() => layoutLetters(this.text()));
 }
