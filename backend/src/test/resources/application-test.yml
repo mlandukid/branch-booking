@@ -8,3 +8,6 @@ spring:
 booking:
   mail:
     enabled: false
+  # Integration tests pick dates relative to today, so they must not depend on the holiday calendar.
+  # The closure itself is covered by unit tests with a fixed clock.
+  closed-on-public-holidays: false
