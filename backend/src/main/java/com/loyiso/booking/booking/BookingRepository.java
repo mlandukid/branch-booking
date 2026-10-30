@@ -21,6 +21,8 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
                                                            LocalDate appointmentDate,
                                                            LocalTime startTime);
 
+    long countByCustomerEmailAndAppointmentDateGreaterThanEqual(String customerEmail, LocalDate from);
+
     @Query("select b from Booking b join fetch b.branch where b.reference = :reference")
     Optional<Booking> findByReferenceWithBranch(@Param("reference") String reference);
 }
