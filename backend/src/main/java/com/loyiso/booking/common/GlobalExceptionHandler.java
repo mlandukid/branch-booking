@@ -1,6 +1,7 @@
 package com.loyiso.booking.common;
 
 import com.loyiso.booking.booking.BookingLimitExceededException;
+import com.loyiso.booking.booking.IdempotencyKeyReuseException;
 import com.loyiso.booking.booking.SlotUnavailableException;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -46,6 +47,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(BookingLimitExceededException.class)
     ProblemDetail handleBookingLimit(BookingLimitExceededException ex) {
         return problem(HttpStatus.valueOf(422), "Booking limit reached", ex.getMessage());
+    }
+
+    @ExceptionHandler(IdempotencyKeyReuseException.class)
+    ProblemDetail handleKeyReuse(IdempotencyKeyReuseException ex) {
+        return problem(HttpStatus.valueOf(422), "Idempotency key reused", ex.getMessage());
     }
 
     @ExceptionHandler(Exception.class)
