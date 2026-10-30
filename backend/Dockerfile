@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # ---- build stage: compiles the application with the Maven wrapper ----
-FROM eclipse-temurin:21-jdk-alpine AS build
+FROM eclipse-temurin:24-jdk-alpine AS build
 WORKDIR /workspace
 
 COPY mvnw pom.xml ./
@@ -13,7 +13,7 @@ COPY src src
 RUN --mount=type=cache,target=/root/.m2 ./mvnw -B -DskipTests package
 
 # ---- runtime stage: small JRE image, non-root user ----
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:24-jre-alpine
 RUN addgroup -S app && adduser -S app -G app
 WORKDIR /app
 
