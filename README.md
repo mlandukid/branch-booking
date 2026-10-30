@@ -13,6 +13,8 @@ A full-stack application for scheduling branch appointments. Customers choose a 
 
 ![Booking page](docs/booking-page.png)
 
+![Confirmed booking](docs/confirmation-slip.png)
+
 ![Confirmation email in MailHog](docs/confirmation-email.png)
 
 ## Run it with Docker (recommended)
