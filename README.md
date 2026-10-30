@@ -95,6 +95,7 @@ Interactive documentation is available at `/swagger-ui.html`. The OpenAPI docume
 | GET | `/api/v1/branches/{id}/slots?date=YYYY-MM-DD` | Every slot in the day, with availability |
 | POST | `/api/v1/bookings` | Book a slot. Returns `201`, or `409` if the slot is taken |
 | GET | `/api/v1/bookings/{reference}` | Look up a booking |
+| GET | `/api/v1/holidays?year=YYYY` | South African public holidays, on which branches are closed |
 
 Errors use RFC 7807 problem responses. Validation errors include the failing fields.
 
@@ -119,6 +120,8 @@ Example:
 **One customer cannot hoard slots.** An email address may hold at most three upcoming appointments, otherwise the API answers `422`. Unlike the slot rule, this is a soft limit checked in the service, not a database constraint, so two simultaneous requests from the same email could slip past it. That trade-off is acceptable for anti-hoarding. A double booking is not, which is why only the slot rule is enforced by the database.
 
 **Retries are safe.** The browser sends a random `Idempotency-Key` with each booking attempt. The server stores the key in the same transaction as the booking, so a repeat of the same request returns the original booking (flagged with `Idempotent-Replayed: true`) and sends no second email. The same key with a different request is rejected with `422`. If identical requests arrive at the same moment, the one that loses the slot race hands back the winner's booking, and a test proves it with eight simultaneous requests. After one dropped connection the browser retries once by itself, which is only safe because of the key.
+
+**Branches are closed on South African public holidays.** The calendar is computed rather than hard-coded: the fixed dates, Good Friday and Family Day derived from Easter, and the rule in the Public Holidays Act that a holiday falling on a Sunday is observed on the Monday. One-off holidays declared by the President, such as Local Government Elections Day on 4 November 2026, are listed explicitly. The API refuses to list or book slots on those days, and the frontend reads the same list from `/api/v1/holidays`, so there is one source of truth.
 
 **Schema is owned by Flyway.** Hibernate only validates the entities against the migrations (`ddl-auto: validate`).
 
@@ -160,6 +163,8 @@ The defaults are for local development only. Real deployments must supply their 
 What a production deployment would still need: authentication for customers and staff (Spring Security with OIDC), TLS and HSTS at the load balancer, a shared rate limiter if there is more than one instance, and audit logging.
 
 ## Known limitations and next steps
+
+- **Proclaimed one-off holidays must be added by hand.** They are gazetted at short notice, so they live in one list in `PublicHolidayCalendar`. A production system would read them from a maintained source.
 
 - **Idempotency keys are stored forever.** Each key adds a small row. A scheduled job should delete keys older than a day or two.
 

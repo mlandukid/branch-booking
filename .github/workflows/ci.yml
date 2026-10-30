@@ -90,7 +90,13 @@ jobs:
 
           # next weekday that is at least 3 days away
           date=$(date -d "+3 days" +%F)
-          while [ "$(date -d "$date" +%u)" -ge 6 ]; do date=$(date -d "$date +1 day" +%F); done
+          for attempt in $(seq 1 14); do
+            code=$(curl -s -o /dev/null -w "%{http_code}" "$base/api/v1/branches/1/slots?date=$date")
+            [ "$code" = "200" ] && break
+            date=$(date -d "$date +1 day" +%F)
+          done
+          echo "using $date"
+          curl -fsS "$base/api/v1/holidays?year=2026" | grep "Local Government Elections Day" > /dev/null
 
           body="{\"branchId\":1,\"date\":\"$date\",\"startTime\":\"09:00\",\"customerName\":\"CI Smoke\",\"customerEmail\":\"ci-smoke@example.com\"}"
 
