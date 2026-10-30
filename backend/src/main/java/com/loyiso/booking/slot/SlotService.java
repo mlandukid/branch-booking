@@ -4,6 +4,8 @@ import com.loyiso.booking.booking.BookingRepository;
 import com.loyiso.booking.branch.Branch;
 import com.loyiso.booking.branch.BranchService;
 import com.loyiso.booking.common.InvalidRequestException;
+import com.loyiso.booking.holiday.Holiday;
+import com.loyiso.booking.holiday.PublicHolidayCalendar;
 import java.time.Clock;
 import java.time.DayOfWeek;
 import java.time.Duration;
@@ -14,13 +16,17 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Slots are computed from the branch opening hours and slot length, then matched
  * against existing bookings. Nothing is pre-generated, so there is no slot data to go stale.
+ * Branches are closed at weekends and on South African public holidays.
  */
 @Service
 public class SlotService {
@@ -30,11 +36,24 @@ public class SlotService {
     private final BranchService branchService;
     private final BookingRepository bookingRepository;
     private final Clock clock;
+    private final PublicHolidayCalendar holidays;
+    private final boolean closedOnHolidays;
 
-    public SlotService(BranchService branchService, BookingRepository bookingRepository, Clock clock) {
+    @Autowired
+    public SlotService(BranchService branchService,
+                       BookingRepository bookingRepository,
+                       Clock clock,
+                       PublicHolidayCalendar holidays,
+                       @Value("${booking.closed-on-public-holidays:true}") boolean closedOnHolidays) {
         this.branchService = branchService;
         this.bookingRepository = bookingRepository;
         this.clock = clock;
+        this.holidays = holidays;
+        this.closedOnHolidays = closedOnHolidays;
+    }
+
+    public SlotService(BranchService branchService, BookingRepository bookingRepository, Clock clock) {
+        this(branchService, bookingRepository, clock, new PublicHolidayCalendar(), true);
     }
 
     @Transactional(readOnly = true)
@@ -73,6 +92,10 @@ public class SlotService {
         DayOfWeek day = date.getDayOfWeek();
         if (day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY) {
             throw new InvalidRequestException("Branches are closed on weekends.");
+        }
+        Optional<Holiday> holiday = closedOnHolidays ? holidays.on(date) : Optional.empty();
+        if (holiday.isPresent()) {
+            throw new InvalidRequestException("Branches are closed on %s.".formatted(holiday.get().name()));
         }
     }
 
