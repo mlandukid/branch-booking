@@ -1,5 +1,7 @@
 # Branch Appointment Booking
 
+[![CI](https://github.com/mlandukid/branch-booking/actions/workflows/ci.yml/badge.svg)](https://github.com/mlandukid/branch-booking/actions/workflows/ci.yml)
+
 A full-stack application for scheduling branch appointments. Customers choose a branch, a date and a time slot, and receive a confirmation email. A slot can never be booked twice, even when many people try at the same moment.
 
 - **Backend:** Java 21, Spring Boot 4, Spring Data JPA, PostgreSQL, Flyway, springdoc OpenAPI
@@ -111,6 +113,8 @@ Example:
 **Time is explicit.** The business time zone is configurable (`Africa/Johannesburg` by default) and all date logic goes through an injectable `Clock`, so tests control time.
 
 **Same-origin API.** In Docker, nginx serves the UI and proxies `/api` to the backend, so the browser talks to one origin and the backend needs no CORS configuration. In development the Angular dev server proxies `/api` the same way.
+
+**One customer cannot hoard slots.** An email address may hold at most three upcoming appointments, otherwise the API answers `422`. Unlike the slot rule, this is a soft limit checked in the service, not a database constraint, so two simultaneous requests from the same email could slip past it. That trade-off is acceptable for anti-hoarding. A double booking is not, which is why only the slot rule is enforced by the database.
 
 **Schema is owned by Flyway.** Hibernate only validates the entities against the migrations (`ddl-auto: validate`).
 
