@@ -159,16 +159,15 @@
           </div>
 
           <div class="field">
-            <label for="date">Date</label>
-            <input
-              id="date"
-              type="date"
-              formControlName="date"
+            <span class="field-label">Date</span>
+            <app-date-picker
+              [selected]="date()"
               [min]="minDate"
               [max]="maxDate"
-              (change)="onDateChange($event)"
+              [holidays]="holidays()"
+              (picked)="onDatePicked($event)"
             />
-            <p class="hint">Weekdays only, up to 30 days ahead.</p>
+            <p class="hint">Weekdays only, up to 30 days ahead. Closed on public holidays.</p>
           </div>
         </div>
       </section>

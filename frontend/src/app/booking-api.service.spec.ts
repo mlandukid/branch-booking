@@ -46,6 +46,17 @@ describe('BookingApi', () => {
     req.flush({});
   });
 
+  it('requests the public holidays of a year', () => {
+    let names: string[] = [];
+    api.holidays(2026).subscribe((holidays) => (names = holidays.map((holiday) => holiday.name)));
+
+    const req = http.expectOne((r) => r.url === '/api/v1/holidays');
+    expect(req.request.params.get('year')).toBe('2026');
+    req.flush([{ date: '2026-12-25', code: 'CHRISTMAS_DAY', name: 'Christmas Day' }]);
+
+    expect(names).toEqual(['Christmas Day']);
+  });
+
   it('posts a booking request', () => {
     const body = {
       branchId: 1,

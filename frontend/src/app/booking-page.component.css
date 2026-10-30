@@ -142,3 +142,4 @@
 .slip-photo::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, rgba(10, 16, 24, 0.7), transparent 60%); }
 .slip-photo figcaption { position: absolute; right: 16px; bottom: 12px; left: 16px; z-index: 1; color: #fff; font-family: var(--serif); font-size: 1.3rem; font-weight: 700; }
 .slip-photo figcaption span { display: block; font-family: var(--sans); font-size: 0.85rem; font-weight: 400; opacity: 0.9; }
+.field-label { display: block; margin-bottom: 6px; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.9px; text-transform: uppercase; }
