@@ -27,6 +27,13 @@ describe('layoutLetters', () => {
     expect(layoutLetters('A', 0.5, 1.5)[0][0].size).toBeCloseTo(1.5, 5);
   });
 
+  it('keeps a stretched word together as one word', () => {
+    const words = layoutLetters('queueeeeeeeeeeeeeeee!!!');
+
+    expect(words.length).toBe(1);
+    expect(words[0].length).toBe(23);
+  });
+
   it('returns nothing for blank text', () => {
     expect(layoutLetters('   ')).toEqual([]);
   });

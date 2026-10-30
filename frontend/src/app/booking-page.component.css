@@ -136,3 +136,9 @@
   .tile.dim .tile-text { opacity: 0; }
   .tile-name { font-size: 1rem; }
 }
+/* ---------- confirmation photo ---------- */
+.slip-photo { position: relative; height: 200px; margin: -26px -22px 20px; overflow: hidden; border-radius: 4px 4px 0 0; }
+.slip-photo img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.slip-photo::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, rgba(10, 16, 24, 0.7), transparent 60%); }
+.slip-photo figcaption { position: absolute; right: 16px; bottom: 12px; left: 16px; z-index: 1; color: #fff; font-family: var(--serif); font-size: 1.3rem; font-weight: 700; }
+.slip-photo figcaption span { display: block; font-family: var(--sans); font-size: 0.85rem; font-weight: 400; opacity: 0.9; }
