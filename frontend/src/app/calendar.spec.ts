@@ -1,5 +1,5 @@
 import { Booking } from './booking.models';
-import { buildIcs } from './calendar';
+import { buildIcs, directionsUrl, googleCalendarUrl } from './calendar';
 
 const booking: Booking = {
   reference: 'abc-123',
@@ -37,5 +37,23 @@ describe('buildIcs', () => {
 
   it('uses CRLF line endings as the format requires', () => {
     expect(ics.includes('\r\n')).toBe(true);
+  });
+});
+
+describe('calendar links', () => {
+  it('builds a Google Calendar link for the appointment', () => {
+    const url = new URL(googleCalendarUrl(booking, 'Sandton City, Johannesburg'));
+
+    expect(url.origin + url.pathname).toBe('https://calendar.google.com/calendar/render');
+    expect(url.searchParams.get('action')).toBe('TEMPLATE');
+    expect(url.searchParams.get('dates')).toBe('20261102T090000/20261102T093000');
+    expect(url.searchParams.get('ctz')).toBe('Africa/Johannesburg');
+    expect(url.searchParams.get('location')).toBe('Sandton City, Johannesburg');
+  });
+
+  it('builds a maps link that survives awkward characters', () => {
+    const url = new URL(directionsUrl('V&A Waterfront, Cape Town'));
+
+    expect(url.searchParams.get('query')).toBe('V&A Waterfront, Cape Town');
   });
 });

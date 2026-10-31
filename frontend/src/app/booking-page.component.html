@@ -57,7 +57,10 @@
       <p class="slip-date">{{ prettyDate(booking.date) }}</p>
       <p class="slip-where">{{ booking.branchName }}</p>
       @if (selectedBranch(); as branch) {
-        <p class="muted">{{ branch.address }}, {{ branch.city }}</p>
+        <p class="muted">
+          {{ branch.address }}, {{ branch.city }} &middot;
+          <a [href]="directionsLink(branch)" target="_blank" rel="noopener">Get directions</a>
+        </p>
       }
 
       <div class="perforation" aria-hidden="true"></div>
@@ -88,7 +91,9 @@
       </p>
 
       <div class="actions">
-        <button type="button" class="primary" (click)="downloadCalendar(booking)">Add to calendar</button>
+        <a class="primary" [href]="googleCalendarLink(booking)" target="_blank" rel="noopener">Add to Google Calendar</a>
+        <button type="button" class="secondary" (click)="downloadCalendar(booking)">Apple or Outlook (.ics)</button>
+        <button type="button" class="secondary" (click)="print()">Print</button>
         <button type="button" class="secondary" (click)="newBooking()">Book another appointment</button>
       </div>
     </article>
@@ -167,7 +172,7 @@
               [holidays]="holidays()"
               (picked)="onDatePicked($event)"
             />
-            <p class="hint">Weekdays only, up to 30 days ahead. Closed on public holidays.</p>
+            <p class="hint">Weekdays only, up to 30 days ahead. Closed on public holidays. Times are South African time.</p>
           </div>
         </div>
       </section>
