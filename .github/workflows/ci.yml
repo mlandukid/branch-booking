@@ -117,6 +117,18 @@ jobs:
           [ -n "$ref1" ]
           [ "$ref1" = "$ref2" ]
 
+          # the private token cancels the booking and frees the slot. A wrong token is refused.
+          token=$(echo "$r1" | grep -o '"manageToken":"[^"]*"' | cut -d'"' -f4)
+          reference=$(echo "$ref1" | cut -d'"' -f4)
+          [ -n "$token" ]
+          wrong=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE -H "X-Manage-Token: not-the-token" "$base/api/v1/bookings/$reference")
+          cancel=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE -H "X-Manage-Token: $token" "$base/api/v1/bookings/$reference")
+          rebook=$(curl -s -o /dev/null -w "%{http_code}" -H "Content-Type: application/json" -d "$idem" "$base/api/v1/bookings")
+          echo "wrong token: $wrong, cancel: $cancel, rebook of the freed slot: $rebook"
+          [ "$wrong" = "404" ]
+          [ "$cancel" = "204" ]
+          [ "$rebook" = "201" ]
+
           # the confirmation email is sent asynchronously, so give it a moment to arrive
           found=no
           for i in $(seq 1 20); do

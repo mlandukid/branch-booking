@@ -38,6 +38,7 @@ services:
       MAIL_HOST: mailhog
       MAIL_PORT: "1025"
       MAIL_ENABLED: "true"
+      PUBLIC_BASE_URL: http://localhost:${APP_PORT:-8081}
       SERVER_FORWARD_HEADERS_STRATEGY: framework
     depends_on:
       postgres:
