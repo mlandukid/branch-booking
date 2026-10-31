@@ -96,6 +96,9 @@ Interactive documentation is available at `/swagger-ui.html`. The OpenAPI docume
 | POST | `/api/v1/bookings` | Book a slot. Returns `201`, or `409` if the slot is taken |
 | GET | `/api/v1/bookings/{reference}` | Look up a booking |
 | GET | `/api/v1/holidays?year=YYYY` | South African public holidays, on which branches are closed |
+| GET | `/api/v1/bookings/{reference}/manage` | View a booking with its private token (`X-Manage-Token` header) |
+| PATCH | `/api/v1/bookings/{reference}` | Move a booking to another slot at the same branch |
+| DELETE | `/api/v1/bookings/{reference}` | Cancel a booking and free the slot |
 
 Errors use RFC 7807 problem responses. Validation errors include the failing fields.
 
@@ -122,6 +125,8 @@ Example:
 **Retries are safe.** The browser sends a random `Idempotency-Key` with each booking attempt. The server stores the key in the same transaction as the booking, so a repeat of the same request returns the original booking (flagged with `Idempotent-Replayed: true`) and sends no second email. The same key with a different request is rejected with `422`. If identical requests arrive at the same moment, the one that loses the slot race hands back the winner's booking, and a test proves it with eight simultaneous requests. After one dropped connection the browser retries once by itself, which is only safe because of the key.
 
 **Branches are closed on South African public holidays.** The calendar is computed rather than hard-coded: the fixed dates, Good Friday and Family Day derived from Easter, and the rule in the Public Holidays Act that a holiday falling on a Sunday is observed on the Monday. One-off holidays declared by the President, such as Local Government Elections Day on 4 November 2026, are listed explicitly. The API refuses to list or book slots on those days, and the frontend reads the same list from `/api/v1/holidays`, so there is one source of truth.
+
+**Customers can change or cancel with a private link.** Creating a booking returns a 256 bit random token once and emails it as a link (`/#manage=<reference>.<token>`). Only its SHA-256 hash is stored, so a database leak cannot be used to change bookings, and it is compared in constant time. The token sits in the URL fragment, which browsers never send to the server, so it stays out of access logs and referrers. A wrong token and an unknown reference give the same `404`, so bookings cannot be probed. Cancelling deletes the booking, which frees the slot without touching the double-booking constraint, and a history table records what happened without any personal data. Moving a booking updates the same row, so the unique slot constraint still decides every race, and a version column makes two simultaneous changes to one booking fail with `409` instead of overwriting each other. Changes are refused within two hours of the start time (configurable).
 
 **Schema is owned by Flyway.** Hibernate only validates the entities against the migrations (`ddl-auto: validate`).
 
@@ -170,5 +175,5 @@ What a production deployment would still need: authentication for customers and 
 
 - **No authentication.** Anyone can book and look up a booking by reference. A production version would add customer identity and rate limiting.
 - **Email is not guaranteed.** If the process stops between commit and send, or the mail server is down, that email is lost. The fix is a transactional outbox: store the pending email in the same transaction as the booking and have a worker send it and retry.
-- **No cancellation or rescheduling.** Slots are one booking each. Capacity per slot is a natural extension.
+- **A replayed booking request carries no manage link.** The token is shown once, and only its hash is stored, so a retry after a lost response cannot return it. The confirmation email has it. Moving a booking to a different branch is not supported.
 - **Swagger UI is publicly exposed.** In production it should be disabled or protected (`springdoc.api-docs.enabled=false`, `springdoc.swagger-ui.enabled=false`).

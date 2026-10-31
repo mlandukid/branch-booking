@@ -1,6 +1,7 @@
 package com.loyiso.booking.common;
 
 import com.loyiso.booking.booking.BookingLimitExceededException;
+import com.loyiso.booking.booking.ChangeWindowClosedException;
 import com.loyiso.booking.booking.IdempotencyKeyReuseException;
 import com.loyiso.booking.booking.SlotUnavailableException;
 import java.util.LinkedHashMap;
@@ -8,6 +9,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -52,6 +54,17 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(IdempotencyKeyReuseException.class)
     ProblemDetail handleKeyReuse(IdempotencyKeyReuseException ex) {
         return problem(HttpStatus.valueOf(422), "Idempotency key reused", ex.getMessage());
+    }
+
+    @ExceptionHandler(ChangeWindowClosedException.class)
+    ProblemDetail handleChangeWindowClosed(ChangeWindowClosedException ex) {
+        return problem(HttpStatus.CONFLICT, "Too late to change", ex.getMessage());
+    }
+
+    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+    ProblemDetail handleConcurrentChange(ObjectOptimisticLockingFailureException ex) {
+        return problem(HttpStatus.CONFLICT, "Booking changed",
+                "This booking was changed at the same moment. Please reload and try again.");
     }
 
     @ExceptionHandler(Exception.class)

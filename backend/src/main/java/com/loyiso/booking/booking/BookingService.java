@@ -59,6 +59,9 @@ public class BookingService {
      * publishes nothing, so a retry never books twice or sends a second email. The key is stored
      * in the same transaction as the booking, so either both exist or neither does.
      *
+     * A private token for changing or cancelling the booking is created here. Only its hash is
+     * stored. The token itself goes out once, in the response and the confirmation email.
+     *
      * The per-customer limit is a softer rule: two simultaneous requests from the same email
      * could both pass the count. That is acceptable for an anti-hoarding rule, whereas a double
      * booking is not, which is why only the slot rule is enforced by the database.
@@ -100,6 +103,8 @@ public class BookingService {
                 request.customerName().trim(),
                 email,
                 Instant.now(clock));
+        String manageToken = ManageTokens.generate();
+        booking.setManageTokenHash(ManageTokens.hash(manageToken));
 
         try {
             // Flush now so a constraint violation surfaces here, not later at commit.
@@ -122,8 +127,8 @@ public class BookingService {
             }
         }
 
-        eventPublisher.publishEvent(BookingCreatedEvent.from(booking));
-        return new CreateResult(BookingResponse.from(booking), false);
+        eventPublisher.publishEvent(BookingCreatedEvent.from(booking, manageToken));
+        return new CreateResult(BookingResponse.created(booking, manageToken), false);
     }
 
     @Transactional(readOnly = true)

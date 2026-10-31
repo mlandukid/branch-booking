@@ -10,6 +10,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -45,6 +46,13 @@ public class Booking {
     @Column(nullable = false)
     private Instant createdAt;
 
+    /** SHA-256 of the private token. The token itself is never stored. */
+    @Column(name = "manage_token_hash", length = 64)
+    private String manageTokenHash;
+
+    @Version
+    private long version;
+
     protected Booking() {
         // required by JPA
     }
@@ -60,6 +68,11 @@ public class Booking {
         this.createdAt = createdAt;
     }
 
+    public void reschedule(LocalDate newDate, LocalTime newStart) {
+        this.appointmentDate = newDate;
+        this.startTime = newStart;
+    }
+
     public Long getId() { return id; }
     public String getReference() { return reference; }
     public Branch getBranch() { return branch; }
@@ -68,4 +81,6 @@ public class Booking {
     public String getCustomerName() { return customerName; }
     public String getCustomerEmail() { return customerEmail; }
     public Instant getCreatedAt() { return createdAt; }
+    public String getManageTokenHash() { return manageTokenHash; }
+    public void setManageTokenHash(String manageTokenHash) { this.manageTokenHash = manageTokenHash; }
 }
