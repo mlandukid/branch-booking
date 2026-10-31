@@ -16,9 +16,15 @@ public record BookingCreatedEvent(
         LocalTime startTime,
         LocalTime endTime,
         String customerName,
-        String customerEmail) {
+        String customerEmail,
+        String manageToken) {
 
-    public static BookingCreatedEvent from(Booking booking) {
+    public BookingCreatedEvent(String reference, String branchName, String branchAddress, LocalDate date,
+                               LocalTime startTime, LocalTime endTime, String customerName, String customerEmail) {
+        this(reference, branchName, branchAddress, date, startTime, endTime, customerName, customerEmail, null);
+    }
+
+    public static BookingCreatedEvent from(Booking booking, String manageToken) {
         Branch branch = booking.getBranch();
         return new BookingCreatedEvent(
                 booking.getReference(),
@@ -28,6 +34,13 @@ public record BookingCreatedEvent(
                 booking.getStartTime(),
                 booking.getStartTime().plusMinutes(branch.getSlotMinutes()),
                 booking.getCustomerName(),
-                booking.getCustomerEmail());
+                booking.getCustomerEmail(),
+                manageToken);
+    }
+
+    /** Deliberately leaves out the token and the email address, so logging an event can never leak them. */
+    @Override
+    public String toString() {
+        return "BookingCreatedEvent[reference=" + reference + "]";
     }
 }
