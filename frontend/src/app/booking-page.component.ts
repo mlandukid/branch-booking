@@ -6,7 +6,7 @@ import { BookingApi } from './booking-api.service';
 import { Booking, Branch, Slot } from './booking.models';
 import { BRANCH_PHOTOS, BranchPhoto } from './branch-photos';
 import { Holiday } from './booking.models';
-import { buildIcs } from './calendar';
+import { buildIcs, directionsUrl, googleCalendarUrl } from './calendar';
 import { DatePickerComponent } from './date-picker.component';
 import { GrowTextComponent } from './grow-text.component';
 
@@ -249,6 +249,23 @@ export class BookingPageComponent implements OnInit {
     } catch {
       // Clipboard access can be unavailable (for example on plain http). Nothing to do.
     }
+  }
+
+  protected googleCalendarLink(booking: Booking): string {
+    return googleCalendarUrl(booking, this.locationOf(booking));
+  }
+
+  protected directionsLink(branch: Branch): string {
+    return directionsUrl(`${branch.name}, ${branch.address}, ${branch.city}`);
+  }
+
+  protected print(): void {
+    window.print();
+  }
+
+  private locationOf(booking: Booking): string {
+    const branch = this.selectedBranch();
+    return branch ? `${branch.name}, ${branch.address}, ${branch.city}` : booking.branchName;
   }
 
   protected downloadCalendar(booking: Booking): void {

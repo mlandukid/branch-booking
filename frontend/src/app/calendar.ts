@@ -44,3 +44,24 @@ function escapeText(value: string): string {
     .replaceAll(',', '\\,')
     .replaceAll('\n', '\\n');
 }
+
+/**
+ * A link that opens Google Calendar with the appointment filled in. It needs no sign-in or API key:
+ * Google accepts the event in the address. The time zone is stated, so it lands correctly anywhere.
+ */
+export function googleCalendarUrl(booking: Booking, location: string): string {
+  const params = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: `Branch appointment: ${booking.branchName}`,
+    dates: `${localStamp(booking.date, booking.startTime)}/${localStamp(booking.date, booking.endTime)}`,
+    details: `Reference: ${booking.reference}. Please arrive a few minutes early.`,
+    location,
+    ctz: 'Africa/Johannesburg',
+  });
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
+/** A Google Maps link that searches for the branch address. */
+export function directionsUrl(address: string): string {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+}

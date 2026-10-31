@@ -143,3 +143,11 @@
 .slip-photo figcaption { position: absolute; right: 16px; bottom: 12px; left: 16px; z-index: 1; color: #fff; font-family: var(--serif); font-size: 1.3rem; font-weight: 700; }
 .slip-photo figcaption span { display: block; font-family: var(--sans); font-size: 0.85rem; font-weight: 400; opacity: 0.9; }
 .field-label { display: block; margin-bottom: 6px; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.9px; text-transform: uppercase; }
+a.primary, a.secondary { display: inline-block; text-align: center; text-decoration: none; }
+.slip .muted a { color: var(--forest); font-weight: 600; }
+
+@media print {
+  .masthead, .panel, .footer, .actions, .intro, .progress, .slip-photo { display: none !important; }
+  .shell { display: block; padding: 0; }
+  .slip { margin: 0; border: 1px solid #000; animation: none; }
+}
