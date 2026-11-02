@@ -1,19 +1,22 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 
 import { BookingApi } from './booking-api.service';
 import { Booking, Branch, Slot } from './booking.models';
 import { BRANCH_PHOTOS, BranchPhoto } from './branch-photos';
 import { Holiday } from './booking.models';
+import { describeError } from './api-error';
 import { buildIcs, directionsUrl, googleCalendarUrl } from './calendar';
+import { ManageBookingComponent } from './manage-booking.component';
+import { ManageLink, manageHash, parseManageHash } from './manage-link';
 import { DatePickerComponent } from './date-picker.component';
 import { GrowTextComponent } from './grow-text.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [ReactiveFormsModule, GrowTextComponent, DatePickerComponent],
+  imports: [ReactiveFormsModule, GrowTextComponent, DatePickerComponent, ManageBookingComponent],
   templateUrl: './booking-page.component.html',
   styleUrl: './booking-page.component.css',
 })
@@ -39,6 +42,8 @@ export class BookingPageComponent implements OnInit {
   protected readonly loadingBranches = signal(true);
 
   protected readonly holidays = signal<Record<string, Holiday>>({});
+  protected readonly manageLink = signal<ManageLink | null>(parseManageHash(window.location.hash));
+  protected readonly online = signal(navigator.onLine);
   protected readonly branchId = signal<number | null>(null);
   protected readonly date = signal<string | null>(null);
 
@@ -120,6 +125,20 @@ export class BookingPageComponent implements OnInit {
     customerName: ['', [Validators.required, Validators.maxLength(120)]],
     customerEmail: ['', [Validators.required, Validators.email, Validators.maxLength(254)]],
   });
+
+  constructor() {
+    const onHashChange = () => this.manageLink.set(parseManageHash(window.location.hash));
+    const onOnline = () => this.online.set(true);
+    const onOffline = () => this.online.set(false);
+    window.addEventListener('hashchange', onHashChange);
+    window.addEventListener('online', onOnline);
+    window.addEventListener('offline', onOffline);
+    inject(DestroyRef).onDestroy(() => {
+      window.removeEventListener('hashchange', onHashChange);
+      window.removeEventListener('online', onOnline);
+      window.removeEventListener('offline', onOffline);
+    });
+  }
 
   ngOnInit(): void {
     this.loadBranches();
@@ -230,6 +249,20 @@ export class BookingPageComponent implements OnInit {
           }
         },
       });
+  }
+
+  protected openManage(booking: Booking): void {
+    if (booking.manageToken) {
+      window.location.hash = manageHash(booking.reference, booking.manageToken);
+    }
+  }
+
+  protected leaveManage(): void {
+    history.replaceState(null, '', window.location.pathname + window.location.search);
+    this.manageLink.set(null);
+    this.confirmation.set(null);
+    this.selectedSlot.set(null);
+    this.loadSlots();
   }
 
   protected newBooking(): void {
@@ -345,24 +378,6 @@ export class BookingPageComponent implements OnInit {
   }
 }
 
-function describeError(err: HttpErrorResponse): string {
-  if (err.status === 0) {
-    return 'We could not reach the booking service. Please try again in a moment.';
-  }
-  if (err.status === 409) {
-    return 'Sorry, that time was just booked by someone else. Please choose another time.';
-  }
-  const fieldErrors = err.error?.errors as Record<string, string> | undefined;
-  if (fieldErrors) {
-    return Object.entries(fieldErrors)
-      .map(([field, message]) => `${field}: ${message}`)
-      .join('. ');
-  }
-  if (typeof err.error?.detail === 'string') {
-    return err.error.detail;
-  }
-  return 'Something went wrong on our side. Please try again.';
-}
 
 function parseIsoDate(iso: string): Date {
   const [year, month, day] = iso.split('-').map(Number);

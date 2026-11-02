@@ -151,3 +151,4 @@ a.primary, a.secondary { display: inline-block; text-align: center; text-decorat
   .shell { display: block; padding: 0; }
   .slip { margin: 0; border: 1px solid #000; animation: none; }
 }
+.offline { width: calc(100% - 32px); max-width: 1088px; margin: 12px auto 0; padding: 10px 14px; border-left: 4px solid var(--saffron); background: var(--sand); font-weight: 600; }
