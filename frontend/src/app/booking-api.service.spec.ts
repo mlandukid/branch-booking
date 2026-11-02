@@ -57,6 +57,27 @@ describe('BookingApi', () => {
     expect(names).toEqual(['Christmas Day']);
   });
 
+  it('sends the private token as a header when viewing, moving and cancelling', () => {
+    api.view('ref-1', 'tok').subscribe();
+    const view = http.expectOne('/api/v1/bookings/ref-1/manage');
+    expect(view.request.method).toBe('GET');
+    expect(view.request.headers.get('X-Manage-Token')).toBe('tok');
+    view.flush({});
+
+    api.move('ref-1', 'tok', '2026-11-09', '10:30:00').subscribe();
+    const move = http.expectOne('/api/v1/bookings/ref-1');
+    expect(move.request.method).toBe('PATCH');
+    expect(move.request.headers.get('X-Manage-Token')).toBe('tok');
+    expect(move.request.body).toEqual({ date: '2026-11-09', startTime: '10:30:00' });
+    move.flush({});
+
+    api.cancel('ref-1', 'tok').subscribe();
+    const cancel = http.expectOne('/api/v1/bookings/ref-1');
+    expect(cancel.request.method).toBe('DELETE');
+    expect(cancel.request.headers.get('X-Manage-Token')).toBe('tok');
+    cancel.flush(null);
+  });
+
   it('posts a booking request', () => {
     const body = {
       branchId: 1,

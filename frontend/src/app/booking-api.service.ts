@@ -23,6 +23,26 @@ export class BookingApi {
     return this.http.get<Slot[]>(`${this.base}/branches/${branchId}/slots`, { params: { date } });
   }
 
+  view(reference: string, token: string): Observable<Booking> {
+    return this.http.get<Booking>(`${this.base}/bookings/${encodeURIComponent(reference)}/manage`, {
+      headers: { 'X-Manage-Token': token },
+    });
+  }
+
+  move(reference: string, token: string, date: string, startTime: string): Observable<Booking> {
+    return this.http.patch<Booking>(
+      `${this.base}/bookings/${encodeURIComponent(reference)}`,
+      { date, startTime },
+      { headers: { 'X-Manage-Token': token } },
+    );
+  }
+
+  cancel(reference: string, token: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/bookings/${encodeURIComponent(reference)}`, {
+      headers: { 'X-Manage-Token': token },
+    });
+  }
+
   holidays(year: number): Observable<Holiday[]> {
     return this.http.get<Holiday[]>(`${this.base}/holidays`, { params: { year } });
   }
