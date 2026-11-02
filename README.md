@@ -38,6 +38,14 @@ Then open http://localhost:8081. The first build downloads images and takes a fe
 | Edge security | `frontend/nginx.conf`, `SecurityHeadersFilter` |
 | The pipeline | `.github/workflows/ci.yml` |
 
+## Demo
+
+https://github.com/user-attachments/assets/71fd2b8d-ebad-4a1a-a372-9b0eba21229e
+
+
+
+
+
 ## Screenshots
 
 ![Booking page](docs/booking-page.png)
