@@ -41,6 +41,12 @@ public record BookingResponse(
         return build(booking, maskEmail(booking.getCustomerEmail()), null);
     }
 
+    /** Leaves out the token, the email address and the name, so logging a response can never leak them. */
+    @Override
+    public String toString() {
+        return "BookingResponse[reference=" + reference + "]";
+    }
+
     static String maskEmail(String email) {
         int at = email == null ? -1 : email.indexOf('@');
         if (at <= 0) {
