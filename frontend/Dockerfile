@@ -17,6 +17,9 @@ FROM nginxinc/nginx-unprivileged:stable-alpine
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/dist/frontend/browser /usr/share/nginx/html
 
+LABEL org.opencontainers.image.source="https://github.com/mlandukid/branch-booking"
+LABEL org.opencontainers.image.title="branch-booking-frontend"
+
 EXPOSE 8080
 
 HEALTHCHECK --interval=15s --timeout=3s --start-period=10s --retries=5 \
