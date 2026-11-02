@@ -10,8 +10,12 @@
   </a>
 </header>
 
-<div class="shell" [class.no-panel]="tiles().length === 0 || confirmation() !== null">
-  @if (tiles().length > 0 && !confirmation()) {
+@if (!online()) {
+  <div class="offline" role="alert">You appear to be offline. We will carry on as soon as your connection is back.</div>
+}
+
+<div class="shell" [class.no-panel]="tiles().length === 0 || confirmation() !== null || manageLink() !== null">
+  @if (tiles().length > 0 && !confirmation() && !manageLink()) {
     <aside class="panel" [class.idle]="branchId() === null" aria-label="Our branches">
       @for (tile of tiles(); track tile.branch.id) {
         <button
@@ -36,7 +40,17 @@
     </aside>
   }
   <main class="page">
-  @if (confirmation(); as booking) {
+  @if (manageLink(); as link) {
+    <app-manage-booking
+      [reference]="link.reference"
+      [token]="link.token"
+      [holidays]="holidays()"
+      [branches]="branches()"
+      [min]="minDate"
+      [max]="maxDate"
+      (leave)="leaveManage()"
+    />
+  } @else if (confirmation(); as booking) {
     <article class="slip" role="status" aria-live="polite">
       @if (photoFor(booking.branchName); as photo) {
         <figure class="slip-photo">
@@ -94,6 +108,9 @@
         <a class="primary" [href]="googleCalendarLink(booking)" target="_blank" rel="noopener">Add to Google Calendar</a>
         <button type="button" class="secondary" (click)="downloadCalendar(booking)">Apple or Outlook (.ics)</button>
         <button type="button" class="secondary" (click)="print()">Print</button>
+        @if (booking.manageToken) {
+          <button type="button" class="secondary" (click)="openManage(booking)">Change or cancel</button>
+        }
         <button type="button" class="secondary" (click)="newBooking()">Book another appointment</button>
       </div>
     </article>
