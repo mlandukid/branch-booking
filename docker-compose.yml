@@ -21,6 +21,7 @@ services:
 
   mailhog:
     image: mailhog/mailhog:v1.0.1
+    platform: linux/amd64
     ports:
       - "${MAILHOG_PORT:-8025}:8025"
     restart: unless-stopped

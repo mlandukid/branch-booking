@@ -265,6 +265,11 @@ export class BookingPageComponent implements OnInit {
     this.loadSlots();
   }
 
+  protected skipToMain(event: Event): void {
+    event.preventDefault();
+    document.getElementById("main")?.focus();
+  }
+
   protected newBooking(): void {
     this.confirmation.set(null);
     this.selectedSlot.set(null);

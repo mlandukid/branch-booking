@@ -12,3 +12,8 @@ dist/
 # Env
 .env
 *.log
+
+# Screen recordings stay out of the repository
+*.mp4
+*.mov
+*.webm

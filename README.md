@@ -9,6 +9,35 @@ A full-stack application for scheduling branch appointments. Customers choose a 
 - **Email:** confirmation sent after the booking commits; MailHog catches it locally
 - **Delivery:** multi-stage Docker images, one-command `docker compose`, GitHub Actions CI
 
+## Reviewer's guide
+
+**Run it in two minutes.** You need Docker with Compose, and ports 8081 and 8025 free:
+
+    docker compose up --build
+
+Then open http://localhost:8081. The first build downloads images and takes a few minutes.
+
+**Five things worth trying**
+
+1. Pick a branch by clicking its photo, choose a weekday and book a time. The confirmation email arrives in the MailHog inbox at http://localhost:8025.
+2. Open the page in two browser tabs, choose the same time in both and submit both. One booking wins and the other is told the time was just taken. The database decides, not the application code.
+3. Click ahead in the calendar. Weekends and public holidays are closed (try 4 November 2026), and holidays and seasonal days have their own symbols.
+4. Use "Change or cancel" on the confirmation, or the private link in the email, to move or cancel the booking.
+5. Open http://localhost:8081/swagger-ui.html and call the API directly.
+
+**Where the interesting code is**
+
+| Topic | Where |
+|-------|-------|
+| The double-booking guarantee | the unique constraint in `V2__create_bookings.sql`, and `BookingService.create` |
+| Proof under concurrency | `BookingFlowTests` (12 simultaneous requests), `BookingConcurrencyTests`, `IdempotencyFlowTests`, `BookingManagementFlowTests` |
+| Safe retries | `IdempotencyKey`, `BookingController` |
+| Change and cancel with a private token | `ManageTokens`, `BookingChangeService` |
+| Email only after the booking is saved | `BookingNotificationListener` |
+| South African public holidays | `PublicHolidayCalendar` |
+| Edge security | `frontend/nginx.conf`, `SecurityHeadersFilter` |
+| The pipeline | `.github/workflows/ci.yml` |
+
 ## Screenshots
 
 ![Booking page](docs/booking-page.png)
@@ -99,7 +128,7 @@ Frontend (http://localhost:4200, proxies `/api` to the backend):
     npm install
     npm start
 
-In this mode confirmation emails are simulated: they are written to the application log instead of being sent.
+In this mode confirmation emails are simulated: they are written to the application log instead of being sent. To see real emails, run MailHog (a single executable, no Docker needed) and start the backend with `BOOKING_MAIL_ENABLED=true` and `PUBLIC_BASE_URL=http://localhost:4200`, so the private link in the email opens the development server.
 
 ## Test it
 
@@ -187,6 +216,15 @@ The defaults are for local development only. Real deployments must supply their 
     docker-compose.yml   Postgres, MailHog, backend and frontend
     .github/workflows/   CI: backend tests on Postgres, frontend build and tests, full-stack smoke test
 
+## Troubleshooting
+
+- **A port is already in use.** Choose other ports: `APP_PORT=9090 MAILHOG_PORT=9025 docker compose up --build`. In PowerShell, set `$env:APP_PORT = "9090"` and `$env:MAILHOG_PORT = "9025"` first.
+- **The first start is slow.** The images are built and downloaded once, which takes a few minutes. The API container waits for the database and the web container waits for the API, so give it up to a minute after the build before opening the page.
+- **Apple Silicon.** MailHog only publishes an amd64 image, so Docker runs it under emulation. That is expected and works.
+- **Start from a clean slate.** `docker compose down -v` also deletes the database volume.
+- **Nothing in the inbox.** Emails are sent just after the booking is saved, so give it a second and refresh http://localhost:8025.
+- **No Docker?** `./mvnw verify` in `backend` and `npm test -- --watch=false` in `frontend` need only Java 21 and Node. The backend tests use an in-memory database.
+
 ## Security
 
 - **Double booking is impossible, not just unlikely.** A unique database constraint decides the winner, and a test proves it under 12 simultaneous requests.
@@ -201,6 +239,8 @@ The defaults are for local development only. Real deployments must supply their 
 What a production deployment would still need: authentication for customers and staff (Spring Security with OIDC), TLS and HSTS at the load balancer, a shared rate limiter if there is more than one instance, and audit logging.
 
 ## Known limitations and next steps
+
+- **No metrics or tracing yet.** Every request has an id in the logs and error bodies, and liveness and readiness probes exist. Business metrics (bookings, conflicts), Prometheus and OpenTelemetry tracing are the next step.
 
 - **Proclaimed one-off holidays must be added by hand.** They are gazetted at short notice, so they live in one list in `PublicHolidayCalendar`. A production system would read them from a maintained source.
 
