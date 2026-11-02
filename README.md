@@ -15,6 +15,8 @@ A full-stack application for scheduling branch appointments. Customers choose a 
 
 ![Confirmed booking](docs/confirmation-slip.png)
 
+![Changing or cancelling a booking](docs/manage-booking.png)
+
 ![Confirmation email in MailHog](docs/confirmation-email.png)
 
 ## Architecture
