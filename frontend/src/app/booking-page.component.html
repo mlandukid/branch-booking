@@ -1,3 +1,5 @@
+<a class="skip" href="#main" (click)="skipToMain($event)">Skip to the booking form</a>
+
 <header class="masthead">
   <a class="wordmark" href="/">
     <svg class="logo" viewBox="0 0 40 40" aria-hidden="true" focusable="false">
@@ -39,7 +41,7 @@
       }
     </aside>
   }
-  <main class="page">
+  <main class="page" id="main" tabindex="-1">
   @if (manageLink(); as link) {
     <app-manage-booking
       [reference]="link.reference"

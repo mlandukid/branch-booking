@@ -152,3 +152,6 @@ a.primary, a.secondary { display: inline-block; text-align: center; text-decorat
   .slip { margin: 0; border: 1px solid #000; animation: none; }
 }
 .offline { width: calc(100% - 32px); max-width: 1088px; margin: 12px auto 0; padding: 10px 14px; border-left: 4px solid var(--saffron); background: var(--sand); font-weight: 600; }
+.skip { position: absolute; top: 8px; left: -9999px; z-index: 100; padding: 10px 14px; border-radius: 4px; background: var(--ink); color: #fff; font-weight: 700; text-decoration: none; }
+.skip:focus { left: 8px; }
+#main:focus { outline: none; }
