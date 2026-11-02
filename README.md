@@ -17,6 +17,35 @@ A full-stack application for scheduling branch appointments. Customers choose a 
 
 ![Confirmation email in MailHog](docs/confirmation-email.png)
 
+## Architecture
+
+```mermaid
+flowchart LR
+    Browser["Browser"] -->|"HTTP"| Nginx["nginx: UI, API proxy, rate limits, CSP"]
+    Nginx -->|"/api"| Backend["Spring Boot API"]
+    Backend --> Postgres[("PostgreSQL")]
+    Backend -->|"SMTP, after commit"| Mail["MailHog inbox"]
+```
+
+Two customers click the same slot at the same moment. The database, not the application code, decides the winner:
+
+```mermaid
+sequenceDiagram
+    participant A as Customer A
+    participant B as Customer B
+    participant API as Booking API
+    participant DB as PostgreSQL
+    A->>API: book Sandton 09:00
+    B->>API: book Sandton 09:00
+    API->>DB: insert booking for A
+    API->>DB: insert booking for B
+    DB-->>API: A committed
+    DB-->>API: B rejected by the unique constraint
+    API-->>A: 201 Created
+    API-->>B: 409 Conflict
+    Note over API: The confirmation email is sent only after A's commit
+```
+
 ## Run it with Docker (recommended)
 
 Prerequisite: Docker with Compose.
@@ -128,6 +157,8 @@ Example:
 
 **Customers can change or cancel with a private link.** Creating a booking returns a 256 bit random token once and emails it as a link (`/#manage=<reference>.<token>`). Only its SHA-256 hash is stored, so a database leak cannot be used to change bookings, and it is compared in constant time. The token sits in the URL fragment, which browsers never send to the server, so it stays out of access logs and referrers. A wrong token and an unknown reference give the same `404`, so bookings cannot be probed. Cancelling deletes the booking, which frees the slot without touching the double-booking constraint, and a history table records what happened without any personal data. Moving a booking updates the same row, so the unique slot constraint still decides every race, and a version column makes two simultaneous changes to one booking fail with `409` instead of overwriting each other. Changes are refused within two hours of the start time (configurable).
 
+**Personal data is kept only as long as it is needed.** Bookings, with the customer name and email address, are deleted 90 days after the appointment (`RETENTION_DAYS`), by a nightly job. Idempotency keys go with their booking, and the booking history never contains personal data. This follows the data minimisation principle of South Africa's POPIA.
+
 **Schema is owned by Flyway.** Hibernate only validates the entities against the migrations (`ddl-auto: validate`).
 
 ## Configuration
@@ -171,7 +202,7 @@ What a production deployment would still need: authentication for customers and 
 
 - **Proclaimed one-off holidays must be added by hand.** They are gazetted at short notice, so they live in one list in `PublicHolidayCalendar`. A production system would read them from a maintained source.
 
-- **Idempotency keys are stored forever.** Each key adds a small row. A scheduled job should delete keys older than a day or two.
+- **The retention job runs on every instance.** That is safe because deleting the same old rows twice does nothing, but a lock such as ShedLock would stop the duplicate work.
 
 - **No authentication.** Anyone can book and look up a booking by reference. A production version would add customer identity and rate limiting.
 - **Email is not guaranteed.** If the process stops between commit and send, or the mail server is down, that email is lost. The fix is a transactional outbox: store the pending email in the same transaction as the booking and have a worker send it and retry.

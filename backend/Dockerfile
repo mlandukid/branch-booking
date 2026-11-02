@@ -19,10 +19,14 @@ WORKDIR /app
 
 COPY --from=build /workspace/target/booking-*.jar app.jar
 
+LABEL org.opencontainers.image.source="https://github.com/mlandukid/branch-booking"
+LABEL org.opencontainers.image.title="branch-booking-backend"
+
 USER app
 EXPOSE 8080
 
 HEALTHCHECK --interval=15s --timeout=3s --start-period=40s --retries=5 \
   CMD wget -qO- http://localhost:8080/actuator/health | grep -q '"status":"UP"' || exit 1
 
-ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75", "-jar", "app.jar"]
+# Restart the container on an out-of-memory error instead of limping on in a broken state.
+ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75", "-XX:+ExitOnOutOfMemoryError", "-jar", "app.jar"]

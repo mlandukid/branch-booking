@@ -37,6 +37,7 @@ booking:
   timezone: ${BOOKING_TIMEZONE:Africa/Johannesburg}
   public-base-url: ${PUBLIC_BASE_URL:http://localhost:8081}
   change-cutoff-hours: ${CHANGE_CUTOFF_HOURS:2}
+  retention-days: ${RETENTION_DAYS:90}
   mail:
     enabled: ${MAIL_ENABLED:true}
     from: ${MAIL_FROM:no-reply@branchbooking.local}
