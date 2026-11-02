@@ -32,6 +32,8 @@ export interface Booking {
   customerName: string;
   customerEmail: string;
   createdAt: string;
+  /** Present only in the response to a brand new booking. */
+  manageToken?: string | null;
 }
 export interface Holiday {
   date: string;
