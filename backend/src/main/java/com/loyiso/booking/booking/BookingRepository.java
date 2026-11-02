@@ -5,6 +5,7 @@ import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -22,6 +23,10 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
                                                            LocalTime startTime);
 
     long countByCustomerEmailAndAppointmentDateGreaterThanEqual(String customerEmail, LocalDate from);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("delete from Booking b where b.appointmentDate < :cutoff")
+    int deleteOlderThan(@Param("cutoff") LocalDate cutoff);
 
     @Query("select b from Booking b join fetch b.branch where b.reference = :reference")
     Optional<Booking> findByReferenceWithBranch(@Param("reference") String reference);
