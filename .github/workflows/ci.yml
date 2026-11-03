@@ -129,6 +129,9 @@ jobs:
           [ "$cancel" = "204" ]
           [ "$rebook" = "201" ]
 
+          # the metrics endpoint works inside the stack, and counted the bookings above
+          docker compose exec -T backend wget -qO- http://localhost:8080/actuator/prometheus | grep -q bookings_created_total
+
           # the confirmation email is sent asynchronously, so give it a moment to arrive
           found=no
           for i in $(seq 1 20); do

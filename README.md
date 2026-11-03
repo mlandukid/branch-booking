@@ -167,6 +167,9 @@ Interactive documentation is available at `/swagger-ui.html`. The OpenAPI docume
 | GET | `/api/v1/bookings/{reference}/manage` | View a booking with its private token (`X-Manage-Token` header) |
 | PATCH | `/api/v1/bookings/{reference}` | Move a booking to another slot at the same branch |
 | DELETE | `/api/v1/bookings/{reference}` | Cancel a booking and free the slot |
+| GET | `/api/v1/reasons` | The reasons for a visit, each with a note on what to bring |
+| POST | `/api/v1/admin/branches` | Create a branch (needs `X-Admin-Key`, off unless `ADMIN_API_KEY` is set) |
+| PUT | `/api/v1/admin/branches/{id}` | Update a branch (same key, refused while the schedule has upcoming bookings) |
 
 Errors use RFC 7807 problem responses. Validation errors include the failing fields.
 
@@ -197,6 +200,17 @@ Example:
 **Customers can change or cancel with a private link.** Creating a booking returns a 256 bit random token once and emails it as a link (`/#manage=<reference>.<token>`). Only its SHA-256 hash is stored, so a database leak cannot be used to change bookings, and it is compared in constant time. The token sits in the URL fragment, which browsers never send to the server, so it stays out of access logs and referrers. A wrong token and an unknown reference give the same `404`, so bookings cannot be probed. Cancelling deletes the booking, which frees the slot without touching the double-booking constraint, and a history table records what happened without any personal data. Moving a booking updates the same row, so the unique slot constraint still decides every race, and a version column makes two simultaneous changes to one booking fail with `409` instead of overwriting each other. Changes are refused within two hours of the start time (configurable).
 
 **Personal data is kept only as long as it is needed.** Bookings, with the customer name and email address, are deleted 90 days after the appointment (`RETENTION_DAYS`), by a nightly job. Idempotency keys go with their booking, and the booking history never contains personal data. This follows the data minimisation principle of South Africa's POPIA.
+
+**Visits have a reason.** The customer says why they are coming (open an account, replace a card, get help with a problem, update details, loans and savings, or something else). The list comes from `/api/v1/reasons` together with a short "what to bring" note, which is shown on the form, the slip and the email, and the reason is stored on the booking and counted in the metrics.
+
+**Branches are managed through an admin API that is off by default.** The application has no customer login, so a public endpoint for editing branches would be reckless. Setting `ADMIN_API_KEY` switches on `POST /api/v1/admin/branches` and `PUT /api/v1/admin/branches/{id}`, guarded by an `X-Admin-Key` header that is compared as hashes in constant time and checked before the request body is read. Without a key the endpoints answer `404`, so they do not advertise themselves. Opening hours and appointment length cannot change while a branch has upcoming bookings, because moving the slot grid would strand them. Time slots themselves are computed from those two settings, so there is nothing separate to maintain.
+
+    ADMIN_API_KEY=change-me docker compose up --build
+    curl -X POST http://localhost:8081/api/v1/admin/branches \
+      -H "X-Admin-Key: change-me" -H "Content-Type: application/json" \
+      -d '{"name":"Pretoria Central","address":"Church Square","city":"Pretoria","opensAt":"08:00","closesAt":"16:00","slotMinutes":30}'
+
+**There are business metrics.** Bookings created, cancelled and moved are counted after they commit, and `/actuator/prometheus` serves them with the standard HTTP metrics (conflicts show up as status 409). nginx does not proxy that endpoint, so it is reachable only inside the Docker network, where a Prometheus server would scrape it.
 
 **Schema is owned by Flyway.** Hibernate only validates the entities against the migrations (`ddl-auto: validate`).
 
@@ -248,7 +262,7 @@ What a production deployment would still need: authentication for customers and 
 
 ## Known limitations and next steps
 
-- **No metrics or tracing yet.** Every request has an id in the logs and error bodies, and liveness and readiness probes exist. Business metrics (bookings, conflicts), Prometheus and OpenTelemetry tracing are the next step.
+- **No tracing, dashboards or alerts yet.** Every request has an id in the logs and error bodies, there are liveness and readiness probes, and business metrics are exposed for Prometheus. Distributed tracing with OpenTelemetry, Grafana dashboards and alert rules are the next step.
 
 - **Proclaimed one-off holidays must be added by hand.** They are gazetted at short notice, so they live in one list in `PublicHolidayCalendar`. A production system would read them from a maintained source.
 
