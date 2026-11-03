@@ -48,6 +48,16 @@ public class Branch {
         this.slotMinutes = slotMinutes;
     }
 
+    public void update(String name, String address, String city,
+                       LocalTime opensAt, LocalTime closesAt, int slotMinutes) {
+        this.name = name;
+        this.address = address;
+        this.city = city;
+        this.opensAt = opensAt;
+        this.closesAt = closesAt;
+        this.slotMinutes = slotMinutes;
+    }
+
     public Long getId() { return id; }
     public String getName() { return name; }
     public String getAddress() { return address; }
