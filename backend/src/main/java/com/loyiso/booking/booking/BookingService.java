@@ -105,6 +105,7 @@ public class BookingService {
                 Instant.now(clock));
         String manageToken = ManageTokens.generate();
         booking.setManageTokenHash(ManageTokens.hash(manageToken));
+        booking.setReason(request.reason() == null ? BookingReason.OTHER : request.reason());
 
         try {
             // Flush now so a constraint violation surfaces here, not later at commit.

@@ -19,11 +19,20 @@ public record BookingResponse(
         Instant createdAt,
         @Schema(description = "Private token for changing or cancelling this booking. Returned once, when the "
                 + "booking is created, and also sent in the confirmation email. Null in every other response.")
-        String manageToken) {
+        String manageToken,
+        @Schema(example = "REPLACE_CARD", description = "Why the customer is visiting")
+        String reason) {
 
     public BookingResponse(String reference, Long branchId, String branchName, LocalDate date, LocalTime startTime,
                            LocalTime endTime, String customerName, String customerEmail, Instant createdAt) {
-        this(reference, branchId, branchName, date, startTime, endTime, customerName, customerEmail, createdAt, null);
+        this(reference, branchId, branchName, date, startTime, endTime, customerName, customerEmail, createdAt, null, null);
+    }
+
+    public BookingResponse(String reference, Long branchId, String branchName, LocalDate date, LocalTime startTime,
+                           LocalTime endTime, String customerName, String customerEmail, Instant createdAt,
+                           String manageToken) {
+        this(reference, branchId, branchName, date, startTime, endTime, customerName, customerEmail, createdAt,
+                manageToken, null);
     }
 
     /** The full response, without a token. Used when an earlier request is replayed. */
@@ -67,6 +76,7 @@ public record BookingResponse(
                 booking.getCustomerName(),
                 email,
                 booking.getCreatedAt(),
-                manageToken);
+                manageToken,
+                booking.getReason().name());
     }
 }

@@ -53,6 +53,10 @@ public class Booking {
     @Version
     private long version;
 
+    /** Stored as text, validated by the database. Use getReason and setReason. */
+    @Column(nullable = false, length = 30)
+    private String reason = "OTHER";
+
     protected Booking() {
         // required by JPA
     }
@@ -82,5 +86,7 @@ public class Booking {
     public String getCustomerEmail() { return customerEmail; }
     public Instant getCreatedAt() { return createdAt; }
     public String getManageTokenHash() { return manageTokenHash; }
+    public BookingReason getReason() { return BookingReason.valueOf(reason); }
+    public void setReason(BookingReason reason) { this.reason = reason.name(); }
     public void setManageTokenHash(String manageTokenHash) { this.manageTokenHash = manageTokenHash; }
 }
