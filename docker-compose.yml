@@ -43,7 +43,7 @@ services:
       MAIL_PORT: "1025"
       MAIL_ENABLED: "true"
       ADMIN_API_KEY: ${ADMIN_API_KEY:-}
-      PUBLIC_BASE_URL: http://localhost:${APP_PORT:-8081}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8081}
       SERVER_FORWARD_HEADERS_STRATEGY: framework
     depends_on:
       postgres:
