@@ -21,7 +21,7 @@ public class BookingMetrics {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onCreated(BookingCreatedEvent event) {
         String reason = event.reason() == null ? BookingReason.OTHER.name() : event.reason().name();
-        registry.counter("bookings.created", "branch", event.branchName(), "reason", reason).increment();
+        registry.counter("bookings.confirmed", "branch", event.branchName(), "reason", reason).increment();
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)

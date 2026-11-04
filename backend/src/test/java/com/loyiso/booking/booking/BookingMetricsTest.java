@@ -19,8 +19,8 @@ class BookingMetricsTest {
         metrics.onCreated(new BookingCreatedEvent("r2", "Sandton", "addr", LocalDate.of(2026, 11, 2),
                 LocalTime.of(9, 30), LocalTime.of(10, 0), "Sipho", "s@example.com"));
 
-        assertThat(registry.counter("bookings.created", "branch", "Sandton", "reason", "REPLACE_CARD").count()).isEqualTo(1.0);
-        assertThat(registry.counter("bookings.created", "branch", "Sandton", "reason", "OTHER").count()).isEqualTo(1.0);
+        assertThat(registry.counter("bookings.confirmed", "branch", "Sandton", "reason", "REPLACE_CARD").count()).isEqualTo(1.0);
+        assertThat(registry.counter("bookings.confirmed", "branch", "Sandton", "reason", "OTHER").count()).isEqualTo(1.0);
     }
 
     @Test

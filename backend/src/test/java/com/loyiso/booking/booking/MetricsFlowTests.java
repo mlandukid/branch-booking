@@ -30,7 +30,7 @@ class MetricsFlowTests {
 
     @Test
     void aBookingIsCountedOnceItHasCommitted() throws Exception {
-        double before = registry.counter("bookings.created", "branch", "Sandton", "reason", "OTHER").count();
+        double before = registry.counter("bookings.confirmed", "branch", "Sandton", "reason", "OTHER").count();
         LocalDate date = weekdayAhead(16);
         String body = """
                 {"branchId":1,"date":"%s","startTime":"09:00","customerName":"Metrics Tester","customerEmail":"metrics@example.com"}
@@ -43,7 +43,7 @@ class MetricsFlowTests {
         HttpResponse<String> response = http.send(request, HttpResponse.BodyHandlers.ofString());
 
         assertThat(response.statusCode()).isEqualTo(201);
-        assertThat(registry.counter("bookings.created", "branch", "Sandton", "reason", "OTHER").count())
+        assertThat(registry.counter("bookings.confirmed", "branch", "Sandton", "reason", "OTHER").count())
                 .isEqualTo(before + 1);
     }
 
