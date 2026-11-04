@@ -5,7 +5,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { BookingApi } from './booking-api.service';
 import { Booking, Branch, Slot } from './booking.models';
 import { BRANCH_PHOTOS, BranchPhoto } from './branch-photos';
-import { Holiday } from './booking.models';
+import { Holiday, Reason } from './booking.models';
 import { describeError } from './api-error';
 import { buildIcs, directionsUrl, googleCalendarUrl } from './calendar';
 import { ManageBookingComponent } from './manage-booking.component';
@@ -42,6 +42,9 @@ export class BookingPageComponent implements OnInit {
   protected readonly loadingBranches = signal(true);
 
   protected readonly holidays = signal<Record<string, Holiday>>({});
+  protected readonly reasons = signal<Reason[]>([]);
+  protected readonly reasonCode = signal('');
+  protected readonly chosenReason = computed(() => this.reasons().find((reason) => reason.code === this.reasonCode()) ?? null);
   protected readonly manageLink = signal<ManageLink | null>(parseManageHash(window.location.hash));
   protected readonly online = signal(navigator.onLine);
   protected readonly branchId = signal<number | null>(null);
@@ -122,6 +125,7 @@ export class BookingPageComponent implements OnInit {
   protected readonly form = this.fb.nonNullable.group({
     branchId: ['', [Validators.required]],
     date: ['', [Validators.required]],
+    reason: ['', [Validators.required]],
     customerName: ['', [Validators.required, Validators.maxLength(120)]],
     customerEmail: ['', [Validators.required, Validators.email, Validators.maxLength(254)]],
   });
@@ -143,6 +147,7 @@ export class BookingPageComponent implements OnInit {
   ngOnInit(): void {
     this.loadBranches();
     this.loadHolidays();
+    this.loadReasons();
   }
 
   /** Loads this year and next, which covers every month the calendar lets the customer browse. */
@@ -159,6 +164,14 @@ export class BookingPageComponent implements OnInit {
         error: () => undefined,
       });
     }
+  }
+
+  private loadReasons(): void {
+    this.api.reasons().subscribe({
+      next: (reasons) => this.reasons.set(reasons),
+      // Without the list the field is hidden, and the booking is recorded as "something else".
+      error: () => this.form.controls.reason.setValue('OTHER'),
+    });
   }
 
   protected loadBranches(): void {
@@ -229,6 +242,7 @@ export class BookingPageComponent implements OnInit {
         customerName: value.customerName.trim(),
         customerEmail: value.customerEmail.trim(),
         idempotencyKey: key,
+        reason: value.reason,
       })
       .subscribe({
         next: (booking) => {
@@ -270,12 +284,22 @@ export class BookingPageComponent implements OnInit {
     document.getElementById("main")?.focus();
   }
 
+  protected onReasonChange(event: Event): void {
+    this.reasonCode.set((event.target as HTMLSelectElement).value);
+  }
+
+  protected reasonOf(booking: Booking): Reason | null {
+    return this.reasons().find((reason) => reason.code === booking.reason) ?? null;
+  }
+
   protected newBooking(): void {
     this.confirmation.set(null);
     this.selectedSlot.set(null);
     this.errorMessage.set(null);
     this.form.controls.customerName.reset();
     this.form.controls.customerEmail.reset();
+    this.form.controls.reason.reset();
+    this.reasonCode.set('');
     this.loadSlots();
   }
 

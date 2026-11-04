@@ -78,6 +78,17 @@ describe('BookingApi', () => {
     cancel.flush(null);
   });
 
+  it('loads the reasons for a visit', () => {
+    let count = 0;
+    api.reasons().subscribe((reasons) => (count = reasons.length));
+
+    const req = http.expectOne('/api/v1/reasons');
+    expect(req.request.method).toBe('GET');
+    req.flush([{ code: 'REPLACE_CARD', label: 'Replace a card', bring: 'Bring your ID.' }]);
+
+    expect(count).toBe(1);
+  });
+
   it('posts a booking request', () => {
     const body = {
       branchId: 1,

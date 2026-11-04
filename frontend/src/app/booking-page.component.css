@@ -155,3 +155,6 @@ a.primary, a.secondary { display: inline-block; text-align: center; text-decorat
 .skip { position: absolute; top: 8px; left: -9999px; z-index: 100; padding: 10px 14px; border-radius: 4px; background: var(--ink); color: #fff; font-weight: 700; text-decoration: none; }
 .skip:focus { left: 8px; }
 #main:focus { outline: none; }
+.field.reason { margin-bottom: 18px; }
+.bring { margin: 10px 0 0; padding: 10px 12px; border-left: 4px solid var(--forest); background: var(--sand); font-size: 0.9rem; }
+.fine { color: var(--muted); font-size: 0.875rem; }

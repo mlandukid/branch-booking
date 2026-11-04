@@ -15,6 +15,7 @@ export interface Slot {
 }
 
 export interface CreateBookingRequest {
+  reason?: string;
   branchId: number;
   date: string;
   startTime: string;
@@ -34,9 +35,15 @@ export interface Booking {
   createdAt: string;
   /** Present only in the response to a brand new booking. */
   manageToken?: string | null;
+  reason?: string | null;
 }
 export interface Holiday {
   date: string;
   code: string;
   name: string;
+}
+export interface Reason {
+  code: string;
+  label: string;
+  bring: string;
 }
