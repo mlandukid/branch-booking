@@ -33,10 +33,17 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * The outbox end to end. This class has its own in-memory database, so the dispatchers of other
- * test contexts cannot pick up its emails.
+ * test contexts cannot pick up its emails. It overrides the driver and credentials as well as the URL,
+ * because CI points the rest of the suite at PostgreSQL through environment variables, which would
+ * otherwise clash with this H2 URL.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        properties = "spring.datasource.url=jdbc:h2:mem:outboxtest;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1")
+        properties = {
+                "spring.datasource.url=jdbc:h2:mem:outboxtest;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1",
+                "spring.datasource.driver-class-name=org.h2.Driver",
+                "spring.datasource.username=sa",
+                "spring.datasource.password="
+        })
 @ActiveProfiles("test")
 class EmailOutboxIntegrationTests {
 
