@@ -6,7 +6,7 @@ import java.time.LocalTime;
 
 /**
  * Published inside the booking transaction. Listeners that must only act on committed
- * bookings (such as the confirmation email) subscribe with AFTER_COMMIT.
+ * bookings (such as the confirmation email) subscribe with AFTER_COMMIT or BEFORE_COMMIT.
  */
 public record BookingCreatedEvent(
         String reference,
@@ -17,11 +17,19 @@ public record BookingCreatedEvent(
         LocalTime endTime,
         String customerName,
         String customerEmail,
-        String manageToken) {
+        String manageToken,
+        BookingReason reason) {
 
     public BookingCreatedEvent(String reference, String branchName, String branchAddress, LocalDate date,
                                LocalTime startTime, LocalTime endTime, String customerName, String customerEmail) {
-        this(reference, branchName, branchAddress, date, startTime, endTime, customerName, customerEmail, null);
+        this(reference, branchName, branchAddress, date, startTime, endTime, customerName, customerEmail, null, null);
+    }
+
+    public BookingCreatedEvent(String reference, String branchName, String branchAddress, LocalDate date,
+                               LocalTime startTime, LocalTime endTime, String customerName, String customerEmail,
+                               String manageToken) {
+        this(reference, branchName, branchAddress, date, startTime, endTime, customerName, customerEmail,
+                manageToken, null);
     }
 
     public static BookingCreatedEvent from(Booking booking, String manageToken) {
@@ -35,7 +43,8 @@ public record BookingCreatedEvent(
                 booking.getStartTime().plusMinutes(branch.getSlotMinutes()),
                 booking.getCustomerName(),
                 booking.getCustomerEmail(),
-                manageToken);
+                manageToken,
+                booking.getReason());
     }
 
     /** Deliberately leaves out the token and the email address, so logging an event can never leak them. */

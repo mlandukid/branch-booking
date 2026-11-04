@@ -33,5 +33,13 @@ public record CreateBookingRequest(
         @NotBlank(message = "must not be blank")
         @Email(message = "must be a valid email address")
         @Size(max = 254, message = "must be at most 254 characters")
-        String customerEmail) {
+        String customerEmail,
+
+        @Schema(example = "REPLACE_CARD", description = "Why the customer is visiting. Optional, defaults to OTHER.")
+        BookingReason reason) {
+
+    public CreateBookingRequest(Long branchId, LocalDate date, LocalTime startTime,
+                                String customerName, String customerEmail) {
+        this(branchId, date, startTime, customerName, customerEmail, null);
+    }
 }

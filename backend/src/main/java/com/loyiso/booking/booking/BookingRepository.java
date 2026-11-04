@@ -24,6 +24,8 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     long countByCustomerEmailAndAppointmentDateGreaterThanEqual(String customerEmail, LocalDate from);
 
+    boolean existsByBranchIdAndAppointmentDateGreaterThanEqual(Long branchId, LocalDate from);
+
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("delete from Booking b where b.appointmentDate < :cutoff")
     int deleteOlderThan(@Param("cutoff") LocalDate cutoff);

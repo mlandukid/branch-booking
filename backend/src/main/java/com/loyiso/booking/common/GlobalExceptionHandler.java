@@ -67,6 +67,16 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 "This booking was changed at the same moment. Please reload and try again.");
     }
 
+    @ExceptionHandler(ConflictException.class)
+    ProblemDetail handleConflict(ConflictException ex) {
+        return problem(HttpStatus.CONFLICT, "Conflict", ex.getMessage());
+    }
+
+    @ExceptionHandler(UnauthorizedException.class)
+    ProblemDetail handleUnauthorized(UnauthorizedException ex) {
+        return problem(HttpStatus.UNAUTHORIZED, "Unauthorized", ex.getMessage());
+    }
+
     @ExceptionHandler(Exception.class)
     ProblemDetail handleUnexpected(Exception ex) {
         log.error("Unexpected error", ex);
