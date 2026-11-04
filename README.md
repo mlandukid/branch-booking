@@ -48,13 +48,23 @@ https://github.com/user-attachments/assets/71fd2b8d-ebad-4a1a-a372-9b0eba21229e
 
 ## Screenshots
 
+**Choose a branch by its photo, then a day on a calendar that knows South African public holidays.**
+
 ![Booking page](docs/booking-page.png)
+
+**Say why you are visiting, and see what to bring.**
+
+![Visit reason](docs/visit-reason.png)
+
+**A confirmation slip, and the confirmation email in the inbox.**
 
 ![Confirmed booking](docs/confirmation-slip.png)
 
-![Changing or cancelling a booking](docs/manage-booking.png)
-
 ![Confirmation email in MailHog](docs/confirmation-email.png)
+
+**Change or cancel with the private link.**
+
+![Changing or cancelling a booking](docs/manage-booking.png)
 
 ## Architecture
 
@@ -63,7 +73,7 @@ flowchart LR
     Browser["Browser"] -->|"HTTP"| Nginx["nginx: UI, API proxy, rate limits, CSP"]
     Nginx -->|"/api"| Backend["Spring Boot API"]
     Backend --> Postgres[("PostgreSQL")]
-    Backend -->|"SMTP, after commit"| Mail["MailHog inbox"]
+    Backend -->|"queued email, sent over SMTP"| Mail["MailHog inbox"]
 ```
 
 Two customers click the same slot at the same moment. The database, not the application code, decides the winner:
@@ -82,7 +92,7 @@ sequenceDiagram
     DB-->>API: B rejected by the unique constraint
     API-->>A: 201 Created
     API-->>B: 409 Conflict
-    Note over API: The confirmation email is sent only after A's commit
+    Note over API: A's confirmation email is queued in the same transaction, and only sent once it has committed
 ```
 
 ## Run it with Docker (recommended)
