@@ -3,7 +3,7 @@ import { Component, computed, effect, inject, input, output, signal, untracked }
 
 import { describeError } from './api-error';
 import { BookingApi } from './booking-api.service';
-import { Booking, Branch, Holiday, Slot } from './booking.models';
+import { Booking, Branch, Holiday, Reason, Slot } from './booking.models';
 import { BRANCH_PHOTOS } from './branch-photos';
 import { directionsUrl, googleCalendarUrl } from './calendar';
 import { DatePickerComponent } from './date-picker.component';
@@ -85,6 +85,10 @@ type Mode = 'summary' | 'move' | 'cancel';
               <div>
                 <dt>When</dt>
                 <dd>{{ prettyDate(b.date) }}, {{ time(b.startTime) }} to {{ time(b.endTime) }}</dd>
+              </div>
+              <div>
+                <dt>Reason</dt>
+                <dd>{{ reasonLabel(b.reason) }}</dd>
               </div>
               <div>
                 <dt>Booked for</dt>
@@ -419,6 +423,7 @@ export class ManageBookingComponent {
   /** First and last bookable day, the same window the booking form uses. */
   readonly min = input.required<string>();
   readonly max = input.required<string>();
+  readonly reasons = input<Reason[]>([]);
   readonly leave = output<void>();
 
   private readonly api = inject(BookingApi);
@@ -539,6 +544,10 @@ export class ManageBookingComponent {
 
   protected directionsLink(branch: Branch): string {
     return directionsUrl(`${branch.name}, ${branch.address}, ${branch.city}`);
+  }
+
+  protected reasonLabel(code?: string | null): string {
+    return this.reasons().find((reason) => reason.code === code)?.label ?? 'Something else';
   }
 
   protected time(value: string): string {

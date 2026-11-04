@@ -2,7 +2,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, retry, throwError, timer } from 'rxjs';
 
-import { Booking, Branch, CreateBookingRequest, Holiday, Slot } from './booking.models';
+import { Booking, Branch, CreateBookingRequest, Holiday, Reason, Slot } from './booking.models';
 
 /** A booking request plus an optional key that makes repeating the request safe. */
 export interface BookingAttempt extends CreateBookingRequest {
@@ -41,6 +41,10 @@ export class BookingApi {
     return this.http.delete<void>(`${this.base}/bookings/${encodeURIComponent(reference)}`, {
       headers: { 'X-Manage-Token': token },
     });
+  }
+
+  reasons(): Observable<Reason[]> {
+    return this.http.get<Reason[]>(`${this.base}/reasons`);
   }
 
   holidays(year: number): Observable<Holiday[]> {

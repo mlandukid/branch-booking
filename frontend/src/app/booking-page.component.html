@@ -48,6 +48,7 @@
       [token]="link.token"
       [holidays]="holidays()"
       [branches]="branches()"
+      [reasons]="reasons()"
       [min]="minDate"
       [max]="maxDate"
       (leave)="leaveManage()"
@@ -101,6 +102,9 @@
         </div>
       </dl>
 
+      @if (reasonOf(booking); as reason) {
+        <p class="bring"><strong>{{ reason.label }}.</strong> {{ reason.bring }}</p>
+      }
       <p class="muted note">
         A confirmation email is on its way to <strong>{{ booking.customerEmail }}</strong>. Please arrive a few
         minutes early and quote your reference at reception.
@@ -112,6 +116,8 @@
         <button type="button" class="secondary" (click)="print()">Print</button>
         @if (booking.manageToken) {
           <button type="button" class="secondary" (click)="openManage(booking)">Change or cancel</button>
+        } @else {
+          <p class="fine">Your private link to change or cancel is in your confirmation email.</p>
         }
         <button type="button" class="secondary" (click)="newBooking()">Book another appointment</button>
       </div>
@@ -246,6 +252,24 @@
           <h2 id="details-heading"><span class="no">3</span>Your details</h2>
 
           <p class="chosen">{{ selectedBranch()?.name }}, {{ chosenDate() }} at {{ time(slot.startTime) }}</p>
+
+          @if (reasons().length > 0) {
+            <div class="field reason">
+              <label for="reason">Why are you visiting?</label>
+              <select id="reason" formControlName="reason" (change)="onReasonChange($event)">
+                <option value="" disabled>Choose a reason</option>
+                @for (item of reasons(); track item.code) {
+                  <option [value]="item.code">{{ item.label }}</option>
+                }
+              </select>
+              @if (form.controls.reason.touched && form.controls.reason.invalid) {
+                <p class="error">Please tell us why you are visiting.</p>
+              }
+              @if (chosenReason(); as chosen) {
+                <p class="bring">{{ chosen.bring }}</p>
+              }
+            </div>
+          }
 
           <div class="fields">
             <div class="field">

@@ -107,7 +107,7 @@ Each image has its own Dockerfile: `backend/Dockerfile` and `frontend/Dockerfile
 
 The stack publishes only two ports on your machine: the application on `8081` and the MailHog inbox on `8025`. Postgres and the API container are reachable only inside the Docker network, so the stack does not clash with a Postgres you already run locally. If either port is taken, choose others:
 
-    APP_PORT=9090 MAILHOG_PORT=9025 docker compose up --build
+    APP_PORT=9090 PUBLIC_BASE_URL=http://localhost:9090 MAILHOG_PORT=9025 docker compose up --build
 
 On Windows PowerShell set the variables first, for example `$env:APP_PORT = "9090"`.
 
@@ -240,7 +240,8 @@ The defaults are for local development only. Real deployments must supply their 
 
 ## Troubleshooting
 
-- **A port is already in use.** Choose other ports: `APP_PORT=9090 MAILHOG_PORT=9025 docker compose up --build`. In PowerShell, set `$env:APP_PORT = "9090"` and `$env:MAILHOG_PORT = "9025"` first.
+- **The private link in an email does not open.** The link is built from the `PUBLIC_BASE_URL` setting, which defaults to `http://localhost:8081`. That is right when your browser runs on the same machine as Docker. In a GitHub Codespace or on another machine, set it to the address your browser uses, for example `PUBLIC_BASE_URL=https://$CODESPACE_NAME-8081.$GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN docker compose up --build`. It comes from configuration on purpose, never from request headers, which would let an attacker make the system email victims links to a domain they control. The "Change or cancel" button on the confirmation page works either way.
+- **A port is already in use.** Choose other ports: `APP_PORT=9090 PUBLIC_BASE_URL=http://localhost:9090 MAILHOG_PORT=9025 docker compose up --build`. In PowerShell, set `$env:APP_PORT = "9090"` and `$env:MAILHOG_PORT = "9025"` first.
 - **The first start is slow.** The images are built and downloaded once, which takes a few minutes. The API container waits for the database and the web container waits for the API, so give it up to a minute after the build before opening the page.
 - **Apple Silicon.** MailHog only publishes an amd64 image, so Docker runs it under emulation. That is expected and works.
 - **Start from a clean slate.** `docker compose down -v` also deletes the database volume.
@@ -268,7 +269,7 @@ What a production deployment would still need: authentication for customers and 
 
 - **The retention job runs on every instance.** That is safe because deleting the same old rows twice does nothing, but a lock such as ShedLock would stop the duplicate work.
 
-- **No authentication.** Anyone can book and look up a booking by reference. A production version would add customer identity and rate limiting.
+- **There is no customer login, on purpose.** Booking is meant to be frictionless, so anyone can book, and a booking is managed with its private token instead of an account. The protections are the per-IP rate limit, the per-email limit on upcoming bookings and unguessable tokens that are stored only as hashes. If abuse appeared, the next steps would be bot protection such as a CAPTCHA and verifying the email address before confirming. Anything staff-facing would need real authentication, for example OIDC.
 - **Emails are delivered at least once, and nothing alerts on failures yet.** A crash between sending and marking a row as sent can produce a duplicate email. Rows that fail every attempt stay in the table as `FAILED` and are visible through a gauge, but no alert rule is wired to it.
-- **A replayed booking request carries no manage link.** The token is shown once, and only its hash is stored, so a retry after a lost response cannot return it. The confirmation email has it. Moving a booking to a different branch is not supported.
+- **A replayed booking request carries no manage link, and a booking cannot move to another branch.** The token is shown once and only its hash is stored, so a retry after a lost response cannot return it. The confirmation email always carries it, and the email is now guaranteed to be sent, so nothing is lost. Moving to a different branch is deliberate: cancel and book again, which keeps each change simple to reason about.
 - **Swagger UI is publicly exposed.** In production it should be disabled or protected (`springdoc.api-docs.enabled=false`, `springdoc.swagger-ui.enabled=false`).
