@@ -33,7 +33,7 @@ Then open http://localhost:8081. The first build downloads images and takes a fe
 | Proof under concurrency | `BookingFlowTests` (12 simultaneous requests), `BookingConcurrencyTests`, `IdempotencyFlowTests`, `BookingManagementFlowTests` |
 | Safe retries | `IdempotencyKey`, `BookingController` |
 | Change and cancel with a private token | `ManageTokens`, `BookingChangeService` |
-| Email only after the booking is saved | `BookingNotificationListener` |
+| Email that cannot be lost | `EmailOutboxWriter`, `EmailOutboxDispatcher` |
 | South African public holidays | `PublicHolidayCalendar` |
 | Edge security | `frontend/nginx.conf`, `SecurityHeadersFilter` |
 | The pipeline | `.github/workflows/ci.yml` |
@@ -185,7 +185,7 @@ Example:
 
 **Slots are computed, not stored.** Each branch has opening hours and a slot length. The API generates the slot grid for a date and marks the ones that are already booked or in the past. There is no slot table to seed or keep in sync. Each slot holds exactly one booking.
 
-**Email is sent after commit, off the request thread.** The booking publishes an event inside its transaction. A listener runs only after the transaction commits, so a rolled-back booking never produces a confirmation. It runs asynchronously, so a slow mail server never slows the booking down, and a mail failure is logged and can never undo a booking. Tests prove the committed, lost-race and rolled-back cases.
+**Email goes through a transactional outbox.** When a booking is saved, cancelled or moved, the email is written to an `email_outbox` table in the same database transaction, so a committed booking always has its email queued and a rolled-back one never does. A dispatcher polls the table, sends over SMTP and retries failures with exponential backoff, giving up after a set number of attempts and keeping the row as `FAILED`. Several instances can run it safely because each row is claimed with an atomic update. Delivery is at least once: a crash between sending and marking a row as sent could send a duplicate, which is better than losing a confirmation. The confirmation contains the private manage token, so the body is erased once the email is delivered. Old rows are removed by the retention job, and a gauge (`outbox_emails{status="failed"}`) is there to alert on. Tests cover delivery, retry, giving up, and the committed and rolled-back cases.
 
 **Time is explicit.** The business time zone is configurable (`Africa/Johannesburg` by default) and all date logic goes through an injectable `Clock`, so tests control time.
 
@@ -269,6 +269,6 @@ What a production deployment would still need: authentication for customers and 
 - **The retention job runs on every instance.** That is safe because deleting the same old rows twice does nothing, but a lock such as ShedLock would stop the duplicate work.
 
 - **No authentication.** Anyone can book and look up a booking by reference. A production version would add customer identity and rate limiting.
-- **Email is not guaranteed.** If the process stops between commit and send, or the mail server is down, that email is lost. The fix is a transactional outbox: store the pending email in the same transaction as the booking and have a worker send it and retry.
+- **Emails are delivered at least once, and nothing alerts on failures yet.** A crash between sending and marking a row as sent can produce a duplicate email. Rows that fail every attempt stay in the table as `FAILED` and are visible through a gauge, but no alert rule is wired to it.
 - **A replayed booking request carries no manage link.** The token is shown once, and only its hash is stored, so a retry after a lost response cannot return it. The confirmation email has it. Moving a booking to a different branch is not supported.
 - **Swagger UI is publicly exposed.** In production it should be disabled or protected (`springdoc.api-docs.enabled=false`, `springdoc.swagger-ui.enabled=false`).

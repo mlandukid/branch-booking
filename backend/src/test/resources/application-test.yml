@@ -11,3 +11,8 @@ booking:
   # Integration tests pick dates relative to today, so they must not depend on the holiday calendar.
   # The closure itself is covered by unit tests with a fixed clock.
   closed-on-public-holidays: false
+  # Poll quickly and retry at once, so the retry tests finish in moments.
+  outbox:
+    poll-ms: 200
+    backoff-seconds: 0
+    max-attempts: 3

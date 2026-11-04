@@ -38,6 +38,12 @@ booking:
   public-base-url: ${PUBLIC_BASE_URL:http://localhost:8081}
   change-cutoff-hours: ${CHANGE_CUTOFF_HOURS:2}
   retention-days: ${RETENTION_DAYS:90}
+  outbox:
+    poll-ms: ${OUTBOX_POLL_MS:1000}
+    max-attempts: ${OUTBOX_MAX_ATTEMPTS:8}
+    backoff-seconds: ${OUTBOX_BACKOFF_SECONDS:30}
+    batch-size: 20
+    retention-days: ${OUTBOX_RETENTION_DAYS:30}
   admin:
     api-key: ${ADMIN_API_KEY:}
   mail:
