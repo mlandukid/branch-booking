@@ -158,3 +158,4 @@ a.primary, a.secondary { display: inline-block; text-align: center; text-decorat
 .field.reason { margin-bottom: 18px; }
 .bring { margin: 10px 0 0; padding: 10px 12px; border-left: 4px solid var(--forest); background: var(--sand); font-size: 0.9rem; }
 .fine { color: var(--muted); font-size: 0.875rem; }
+.masthead { display: flex; align-items: center; justify-content: space-between; gap: 16px; }

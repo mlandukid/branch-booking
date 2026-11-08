@@ -10,13 +10,14 @@ import { describeError } from './api-error';
 import { buildIcs, directionsUrl, googleCalendarUrl } from './calendar';
 import { ManageBookingComponent } from './manage-booking.component';
 import { ManageLink, manageHash, parseManageHash } from './manage-link';
+import { ThemeToggleComponent } from './theme-toggle.component';
 import { DatePickerComponent } from './date-picker.component';
 import { GrowTextComponent } from './grow-text.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [ReactiveFormsModule, GrowTextComponent, DatePickerComponent, ManageBookingComponent],
+  imports: [ReactiveFormsModule, GrowTextComponent, DatePickerComponent, ManageBookingComponent, ThemeToggleComponent],
   templateUrl: './booking-page.component.html',
   styleUrl: './booking-page.component.css',
 })
