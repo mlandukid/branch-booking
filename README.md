@@ -222,6 +222,8 @@ Example:
 
 **There are business metrics.** Bookings created, cancelled and moved are counted after they commit, and `/actuator/prometheus` serves them with the standard HTTP metrics (conflicts show up as status 409). nginx does not proxy that endpoint, so it is reachable only inside the Docker network, where a Prometheus server would scrape it.
 
+**Day and night mode.** The theme follows the device setting, and a sun and moon switch in the header overrides it and remembers the choice. A small script file applies the theme before the first paint so there is no flash. It is a file and not inline code because the Content-Security-Policy forbids inline scripts. The dark colours are a layer of variable overrides, so light mode is untouched, and printing is always light.
+
 **Schema is owned by Flyway.** Hibernate only validates the entities against the migrations (`ddl-auto: validate`).
 
 ## Configuration
