@@ -87,6 +87,9 @@ jobs:
           echo "$headers" | grep -i "content-security-policy" > /dev/null
           echo "$headers" | grep -i "x-content-type-options: nosniff" > /dev/null
           if curl -fsS "$base/" | grep -i "onload=" > /dev/null; then echo "inline onload handler found"; exit 1; fi
+          # the theme script is a real file, not the single page app fallback page
+          curl -fsS "$base/theme-init.js" | grep -q "data-theme"
+          curl -fsS "$base/" | grep -q "theme-init.js"
 
           # next weekday that is at least 3 days away
           date=$(date -d "+3 days" +%F)
